@@ -1,5 +1,13 @@
-## EdgeConnect: Generative Image Inpainting with Adversarial Edge Learning
+## Colab-EdgeConnect: Generative Image Inpainting with Adversarial Edge Learning
 [ArXiv](https://arxiv.org/abs/1901.00212) | [BibTex](#citation)
+## Simply download `Colab-edge-connect.ipynb` and open it inside your Google Drive or click [here](https://colab.research.google.com/github/styler00dollar/Colab-edge-connect/blob/master/Colab-edge-connect.ipynb) and copy the file with "File > Save a copy to Drive..." into your Google Drive. 
+
+### Info about fork:
+- It's pretty alpha and not very flexible, but works
+- Testing/Training in Colab possible
+- [Differentiable Augmentation](https://github.com/mit-han-lab/data-efficient-gans)
+- Lacks ```.tflist``` generation
+
 ### Introduction:
 We develop a new approach for image inpainting that does a better job of reproducing filled regions exhibiting fine details inspired by our understanding of how artists work: *lines first, color next*. We propose a two-stage adversarial model EdgeConnect that comprises of an edge generator followed by an image completion network. The edge generator hallucinates edges of the missing region (both regular and irregular) of the image, and the image completion network fills in the missing regions using hallucinated edges as a priori. Detailed description of the system can be found in our [paper](https://arxiv.org/abs/1901.00212).
 <p align='center'>  
