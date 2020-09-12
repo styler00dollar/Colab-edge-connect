@@ -3,10 +3,18 @@
 ## Simply download `Colab-edge-connect.ipynb` and open it inside your Google Drive or click [here](https://colab.research.google.com/github/styler00dollar/Colab-edge-connect/blob/master/Colab-edge-connect.ipynb) and copy the file with "File > Save a copy to Drive..." into your Google Drive. 
 
 ### Info about fork:
-- It's pretty alpha and not very flexible, but works
-- Testing/Training in Colab possible
-- [Differentiable Augmentation](https://github.com/mit-han-lab/data-efficient-gans)
-- Lacks ```.tflist``` generation
+- It's pretty alpha and not very flexible, but works.
+- Testing/Training in Colab possible, but currently primarily changes in repo files. Colab is a bit outdated.
+- [Differentiable Augmentation](https://github.com/mit-han-lab/data-efficient-gans).
+- Added file for list generation.
+- Added tensorboardX.
+- Removed checkpoint overwriting.
+
+### Random Info:
+- If you want to continue training, then rename the latest checkpoints to ```InpaintingModel_dis.pth``` and ```InpaintingModel_gen.pth``` and simply start training again with ```python train.py --model 3 --checkpoints /path/model-checkpoints```.
+- You can use [qd-imd](https://github.com/karfly/qd-imd) for masks, but you need to invert all files. White means the area that needs to be inainted. You can use imagemagick and -negate for that.
+- The input for images needs to be PNG RGB24 to avoid errors. The masks need to be a one channel B/W image.
+- Your dataset can have any dimension, but the dimension for testing needs to be dividable by 4. If not, an error will appear due to network limitations. Some code for that is in the Colab notebook.
 
 ### Introduction:
 We develop a new approach for image inpainting that does a better job of reproducing filled regions exhibiting fine details inspired by our understanding of how artists work: *lines first, color next*. We propose a two-stage adversarial model EdgeConnect that comprises of an edge generator followed by an image completion network. The edge generator hallucinates edges of the missing region (both regular and irregular) of the image, and the image completion network fills in the missing regions using hallucinated edges as a priori. Detailed description of the system can be found in our [paper](https://arxiv.org/abs/1901.00212).
