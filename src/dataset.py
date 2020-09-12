@@ -54,7 +54,7 @@ class Dataset(torch.utils.data.Dataset):
         size = self.input_size
 
         # load image
-        img = imread(self.data[index], mode='RGB')
+        img = imread(self.data[index])
 
         # gray to rgb
         if len(img.shape) < 3:
@@ -182,7 +182,7 @@ class Dataset(torch.utils.data.Dataset):
 
             if os.path.isfile(flist):
                 try:
-                    return np.genfromtxt(flist, dtype=np.str, encoding='utf-8')
+                    return np.genfromtxt(flist, dtype=np.str, delimiter='\n', encoding='utf-8')
                 except:
                     return [flist]
 
