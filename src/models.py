@@ -1,9 +1,9 @@
 # Differentiable Augmentation for Data-Efficient GAN Training
 # Shengyu Zhao, Zhijian Liu, Ji Lin, Jun-Yan Zhu, and Song Han
 # https://arxiv.org/pdf/2006.10738
-
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as F 
+
 policy = 'color,translation,cutout' 
 
 def DiffAugment(x, policy='', channels_first=True):
@@ -91,6 +91,7 @@ class BaseModel(nn.Module):
         self.config = config
         self.iteration = 0
 
+		# loading previous weights
         self.gen_weights_path = os.path.join(config.PATH, name + '_gen.pth')
         self.dis_weights_path = os.path.join(config.PATH, name + '_dis.pth')
 
@@ -122,11 +123,11 @@ class BaseModel(nn.Module):
         torch.save({
             'iteration': self.iteration,
             'generator': self.generator.state_dict()
-        }, self.gen_weights_path)
+        }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_gen.pth"))
 
         torch.save({
             'discriminator': self.discriminator.state_dict()
-        }, self.dis_weights_path)
+        }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_dis.pth"))
 
 
 class EdgeModel(BaseModel):
