@@ -7,6 +7,12 @@ from .models import EdgeModel, InpaintingModel
 from .utils import Progbar, create_dir, stitch_images, imsave
 from .metrics import PSNR, EdgeAccuracy
 
+#import torch
+#from torch.utils.tensorboard import SummaryWriter
+#writer = SummaryWriter()
+#Writer will output to ./runs/ directory by default.
+from tensorboardX import SummaryWriter
+writer = SummaryWriter()
 
 class EdgeConnect():
     def __init__(self, config):
@@ -90,12 +96,15 @@ class EdgeConnect():
             return
 
         while(keep_training):
+			
             epoch += 1
             print('\n\nTraining epoch: %d' % epoch)
 
             progbar = Progbar(total, width=20, stateful_metrics=['epoch', 'iter'])
-
+			
             for items in train_loader:
+                #writer.add_scalar('data/scalar1', 20, self.edge_model.iteration)
+				
                 self.edge_model.train()
                 self.inpaint_model.train()
 
@@ -151,11 +160,18 @@ class EdgeConnect():
                     logs.append(('psnr', psnr.item()))
                     logs.append(('mae', mae.item()))
 
+
                     # backward
                     self.inpaint_model.backward(gen_loss, dis_loss)
                     iteration = self.inpaint_model.iteration
 
-
+                    #print("iteration")
+                    #print(iteration)
+                    writer.add_scalar('data/psnr', psnr.item(), iteration)
+                    writer.add_scalar('data/mae', mae.item(), iteration)
+                    writer.add_scalar('data/gen_loss', gen_loss.data.cpu().numpy(), iteration)
+                    writer.add_scalar('data/dis_loss', dis_loss.data.cpu().numpy(), iteration)
+					
                 # joint model
                 else:
                     # train
@@ -269,7 +285,13 @@ class EdgeConnect():
                 mae = (torch.sum(torch.abs(images - outputs_merged)) / torch.sum(images)).float()
                 logs.append(('psnr', psnr.item()))
                 logs.append(('mae', mae.item()))
-
+                
+                #writer.add_scalar("psnr", psnr.item(), iteration)
+                #writer.add_scalar("mae", mae.item(), iteration)
+                #writer.add_scalar("test", np.random.random(), iteration)
+                #writer.add_scalar("gen_loss", gen_loss.item(), iteration)
+                #writer.add_scalar("dis_loss", dis_loss.item(), iteration)
+                #writer.add_scalar('data/scalar1', 20, iteration)
 
             # joint model
             else:
@@ -288,10 +310,10 @@ class EdgeConnect():
                 i_logs.append(('psnr', psnr.item()))
                 i_logs.append(('mae', mae.item()))
                 logs = e_logs + i_logs
-
-
+                #writer.add_scalar("test", np.random.random(), iteration)
             logs = [("it", iteration), ] + logs
             progbar.add(len(images), values=logs)
+            #writer.flush()
 
     def test(self):
         self.edge_model.eval()
