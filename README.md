@@ -12,7 +12,7 @@
 
 ### Random Info:
 - If you want to continue training, then rename the latest checkpoints to ```InpaintingModel_dis.pth``` and ```InpaintingModel_gen.pth``` and simply start training again with ```python train.py --model 3 --checkpoints /path/model-checkpoints```.
-- You can use [qd-imd](https://github.com/karfly/qd-imd) for masks, but you need to invert all files. White means the area that needs to be inainted. You can use imagemagick and -negate for that.
+- You can use [qd-imd](https://github.com/karfly/qd-imd) for masks, but you need to invert all files. White means the area that needs to be inpainted. You can use imagemagick and -negate for that.
 - The input for images needs to be PNG RGB24 to avoid errors. The masks need to be a one channel B/W image.
 - Your dataset can have any dimension, but the dimension for testing needs to be dividable by 4. If not, an error will appear due to network limitations. Some code for that is in the Colab notebook.
 
