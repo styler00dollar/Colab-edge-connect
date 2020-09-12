@@ -12,6 +12,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    train_filename = 'train.flist'
+    validation_filename = 'val.flist'
+
     train_path = '/home/path/'
     val_path = '/home/path/'
 
@@ -44,20 +47,20 @@ if __name__ == "__main__":
         shuffle(validation_file_names)
 
     # make output file if not existed
-    if not os.path.exists(args.train_filename):
-        os.mknod(args.train_filename)
+    if not os.path.exists(train_filename):
+        os.mknod(train_filename)
 
-    if not os.path.exists(args.validation_filename):
-        os.mknod(args.validation_filename)
+    if not os.path.exists(validation_filename):
+        os.mknod(validation_filename)
 
     # write to file
-    fo = open(args.train_filename, "w")
+    fo = open(train_filename, "w")
     fo.write("\n".join(training_file_names))
     fo.close()
 
-    fo = open(args.validation_filename, "w")
+    fo = open(validation_filename, "w")
     fo.write("\n".join(validation_file_names))
     fo.close()
 
     # print process
-    print("Written file is: ", args.train_filename, ", is_shuffle: ", args.is_shuffled)
+    print("Written file is: ", train_filename, ", is_shuffle: ", args.is_shuffled)
