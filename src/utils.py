@@ -1,4 +1,5 @@
 import os
+import cv2
 import sys
 import time
 import random
@@ -12,11 +13,41 @@ def create_dir(dir):
         os.makedirs(dir)
 
 
-def create_mask(width, height, mask_width, mask_height, x=None, y=None):
+def create_mask(width, height, mask_width, mask_height, x=None, y=None,
+                min_stroke=1, max_stroke=4,
+                min_vertex=1, max_vertex=12,
+                min_length_divisor=10, max_length_divisor=2,
+                min_brush_width_divisor=30, max_brush_width_divisor=8):
     mask = np.zeros((height, width))
-    mask_x = x if x is not None else random.randint(0, width - mask_width)
-    mask_y = y if y is not None else random.randint(0, height - mask_height)
-    mask[mask_y:mask_y + mask_height, mask_x:mask_x + mask_width] = 1
+
+    min_length = height // min_length_divisor
+    max_length = height // max_length_divisor
+    min_brush_width = height // min_brush_width_divisor
+    max_brush_width = height // max_brush_width_divisor
+    max_angle = 2*np.pi
+    num_stroke = np.random.randint(min_stroke, max_stroke+1)
+
+    for _ in range(num_stroke):
+        num_vertex = np.random.randint(min_vertex, max_vertex+1)
+        brush_width = np.random.randint(min_brush_width, max_brush_width+1)
+        start_x = np.random.randint(width)
+        start_y = np.random.randint(height)
+
+        for i in range(num_vertex):
+            angle = np.random.uniform(max_angle)
+            length = np.random.randint(min_length, max_length+1)
+            end_x = (start_x + length * np.sin(angle)).astype(np.int32)
+            end_y = (start_y + length * np.cos(angle)).astype(np.int32)
+
+            cv2.line(mask, (start_y, start_x), (end_y, end_x), 1., brush_width)
+
+            start_x, start_y = end_x, end_y
+
+    if np.random.random() < 0.5:
+        mask = np.fliplr(mask)
+    if np.random.random() < 0.5:
+        mask = np.flipud(mask)
+
     return mask
 
 
