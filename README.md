@@ -4,7 +4,7 @@
 
 ### Info about fork:
 - It's pretty alpha and not very flexible, but works.
-- Testing/Training in Colab possible, but currently primarily changes in repo files. Colab is a bit outdated.
+- Testing/Training in Colab possible, but currently primarily changes in repo files.
 - [Differentiable Augmentation](https://github.com/mit-han-lab/data-efficient-gans).
 - Added file for list generation.
 - Added tensorboardX.
