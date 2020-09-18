@@ -14,9 +14,14 @@ from .metrics import PSNR, EdgeAccuracy
 from tensorboardX import SummaryWriter
 writer = SummaryWriter()
 
+import random
+#from torchvision.utils import save_image
+import torch.nn.functional as nnf
+
 class EdgeConnect():
     def __init__(self, config):
         self.config = config
+        self.mosaic_test = config.MOSAIC_TEST
 
         if config.MODEL == 1:
             model_name = 'edge'
@@ -109,6 +114,13 @@ class EdgeConnect():
                 self.inpaint_model.train()
 
                 images, images_gray, edges, masks = self.cuda(*items)
+
+                if(self.mosaic_test == True):
+                  # resize image with random size. (256 currently hardcoded)
+                  mosaic_size = int(random.triangular(int(min(256*0.01, 256*0.01)), int(min(256*0.2, 256*0.2)), int(min(256*0.0625, 256*0.0625))))
+                  images_mosaic = nnf.interpolate(images, size=(mosaic_size, mosaic_size), mode='nearest')
+                  images_mosaic = nnf.interpolate(images_mosaic, size=(256, 256), mode='nearest')
+                  images = (images * (1 - masks).float()) + (images_mosaic * (masks).float())
 
                 # edge model
                 if model == 1:
@@ -285,13 +297,6 @@ class EdgeConnect():
                 mae = (torch.sum(torch.abs(images - outputs_merged)) / torch.sum(images)).float()
                 logs.append(('psnr', psnr.item()))
                 logs.append(('mae', mae.item()))
-                
-                #writer.add_scalar("psnr", psnr.item(), iteration)
-                #writer.add_scalar("mae", mae.item(), iteration)
-                #writer.add_scalar("test", np.random.random(), iteration)
-                #writer.add_scalar("gen_loss", gen_loss.item(), iteration)
-                #writer.add_scalar("dis_loss", dis_loss.item(), iteration)
-                #writer.add_scalar('data/scalar1', 20, iteration)
 
             # joint model
             else:
