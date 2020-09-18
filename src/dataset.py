@@ -28,6 +28,10 @@ class Dataset(torch.utils.data.Dataset):
         self.mask = config.MASK
         self.nms = config.NMS
         self.random_crop = config.RANDOM_CROP
+        self.horizontal_flip = config.HORIZONTAL_FLIP
+        self.horizontal_flip_ratio = config.HORIZONTAL_FLIP_RATIO
+        self.vertical_flip = config.VERTICAL_FLIP
+        self.vertical_flip_ratio = config.VERTICAL_FLIP_RATIO
 
         # in test mode, there's a one-to-one relationship between mask and image
         # masks are loaded non random
@@ -64,6 +68,15 @@ class Dataset(torch.utils.data.Dataset):
         # resize/crop if needed
         if size != 0:
             img = self.resize(img, size, size)
+
+        # flip with numpy
+        if self.horizontal_flip == 1:
+          if random.randint(0, 1) < self.horizontal_flip_ratio:
+            img = np.flip(img, 1)
+
+        if self.vertical_flip == 1:
+          if random.randint(0, 1) < self.vertical_flip_ratio:
+            img = np.flip(img, 0)
 
         # create grayscale image
         img_gray = rgb2gray(img)
