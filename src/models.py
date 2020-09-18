@@ -6,6 +6,9 @@ import torch.nn.functional as F
 
 policy = 'color,translation,cutout' 
 
+import torch.nn.functional as nnf
+import random
+
 def DiffAugment(x, policy='', channels_first=True):
     if policy:
         if not channels_first:
@@ -274,9 +277,18 @@ class InpaintingModel(BaseModel):
         self.gen_optimizer.zero_grad()
         self.dis_optimizer.zero_grad()
 
+        if(self.mosaic_test == 1):
+          # resize image with random size. (256 currently hardcoded)
+          mosaic_size = int(random.triangular(int(min(256*0.01, 256*0.01)), int(min(256*0.2, 256*0.2)), int(min(256*0.0625, 256*0.0625))))
+          images_mosaic = nnf.interpolate(images, size=(mosaic_size, mosaic_size), mode='nearest')
+          images_mosaic = nnf.interpolate(images_mosaic, size=(256, 256), mode='nearest')
+          images_mosaic = (images * (1 - masks).float()) + (images_mosaic * (masks).float())
+          outputs = self(images_mosaic, edges, masks)
+        else:
+          outputs = self(images, edges, masks)
 
         # process outputs
-        outputs = self(images, edges, masks)
+        #outputs = self(images, edges, masks)
         gen_loss = 0
         dis_loss = 0
 
@@ -329,10 +341,12 @@ class InpaintingModel(BaseModel):
         return outputs, gen_loss, dis_loss, logs
 
     def forward(self, images, edges, masks):
-        if (self.mosaic_test == 0):
-          images_masked = (images * (1 - masks).float()) + masks
-        else:
+        if (self.mosaic_test == 1):
+          # mosaic test
           images_masked = images
+        else:
+          images_masked = (images * (1 - masks).float()) + masks
+
         inputs = torch.cat((images_masked, edges), dim=1)
         outputs = self.generator(inputs)                                    # in: [rgb(3) + edge(1)]
         return outputs
