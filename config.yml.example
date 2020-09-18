@@ -1,6 +1,6 @@
 MODE: 1             # 1: train, 2: test, 3: eval
 MODEL: 3            # 1: edge model, 2: inpaint model, 3: edge-inpaint model, 4: joint model
-MASK: 5             # 1: random block, 2: half, 3: external, 4: (external, random block), 5: (external, random block, half)
+MASK: 1             # 1: random block, 2: half, 3: external, 4: (external, random block), 5: (external, random block, half)
 EDGE: 1             # 1: canny, 2: external
 NMS: 1              # 0: no non-max-suppression, 1: applies non-max-suppression on the external edges by multiplying by Canny
 SEED: 10            # random seed
@@ -12,6 +12,7 @@ HORIZONTAL_FLIP: 1      # flip in all directions (currently not sure where and i
 HORIZONTAL_FLIP_RATIO: 0.5
 VERTICAL_FLIP: 1
 VERTICAL_FLIP_RATIO: 0.5
+MOSAIC_TEST: 1      
 
 TRAIN_FLIST: /content/train/train.tflist
 VAL_FLIST: /content/val/val.tflist
@@ -45,7 +46,7 @@ GAN_LOSS: nsgan               # nsgan | lsgan | hinge
 GAN_POOL_SIZE: 0              # fake images pool size
 
 SAVE_INTERVAL: 200           # how many iterations to wait before saving model (0: never)
-SAMPLE_INTERVAL: 1000         # how many iterations to wait before sampling (0: never)
+SAMPLE_INTERVAL: 20         # how many iterations to wait before sampling (0: never)
 SAMPLE_SIZE: 1               # number of images to sample
 EVAL_INTERVAL: 0              # how many iterations to wait before model evaluation (0: never)
 LOG_INTERVAL: 10              # how many iterations to wait before logging training status (0: never)
