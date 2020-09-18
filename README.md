@@ -9,6 +9,7 @@
 - Added file for list generation.
 - Added tensorboardX.
 - Removed checkpoint overwriting.
+- Original code only has center crop with resize. This fork also includes random crop without resize.
 
 ### Random Info:
 - If you want to continue training, then rename the latest checkpoints to ```InpaintingModel_dis.pth``` and ```InpaintingModel_gen.pth``` and simply start training again with ```python train.py --model 3 --checkpoints /path/model-checkpoints```.
@@ -21,7 +22,6 @@
 - Do not input files smaller than INPUT_SIZE. The original code will crash.
 
 ### TODO:
-- Random crop instead of center crop.
 - Test with custom input data instead of white area behind mask.
 - Maybe fixing INPUT_SIZE limitation.
 - Maybe adding pytorch AMP.
