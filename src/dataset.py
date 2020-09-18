@@ -27,6 +27,7 @@ class Dataset(torch.utils.data.Dataset):
         self.edge = config.EDGE
         self.mask = config.MASK
         self.nms = config.NMS
+        self.random_crop = config.RANDOM_CROP
 
         # in test mode, there's a one-to-one relationship between mask and image
         # masks are loaded non random
@@ -156,17 +157,21 @@ class Dataset(torch.utils.data.Dataset):
         return img_t
 
     def resize(self, img, height, width, centerCrop=True):
-        imgh, imgw = img.shape[0:2]
-
-        if centerCrop and imgh != imgw:
-            # center crop
-            side = np.minimum(imgh, imgw)
-            j = (imgh - side) // 2
-            i = (imgw - side) // 2
-            img = img[j:j + side, i:i + side, ...]
-
-        img = scipy.misc.imresize(img, [height, width])
-
+        if self.random_crop == 1:
+          # randomly crop data
+          x = random.randint(0, img.shape[1] - width)
+          y = random.randint(0, img.shape[0] - height)
+          img = img[y:y+height, x:x+width]
+        else:
+          # Original center crop with resize
+          imgh, imgw = img.shape[0:2]
+          if centerCrop and imgh != imgw:
+              # center crop
+              side = np.minimum(imgh, imgw)
+              j = (imgh - side) // 2
+              i = (imgw - side) // 2
+              img = img[j:j + side, i:i + side, ...]
+          img = scipy.misc.imresize(img, [height, width])
         return img
 
     def load_flist(self, flist):
