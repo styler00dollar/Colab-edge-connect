@@ -7,7 +7,11 @@ SEED: 10            # random seed
 GPU: [0]            # list of gpu ids
 DEBUG: 0            # turns on debugging mode
 VERBOSE: 0          # turns on verbose mode in the output console
-RANDOM_CROP: 0      # instead of center crop, a random crop without resize will be perofrmed
+RANDOM_CROP: 1      # instead of center crop, a random crop without resize will be perofrmed
+HORIZONTAL_FLIP: 1      # flip in all directions (currently not sure where and if is in the original code. I just added my flip.)
+HORIZONTAL_FLIP_RATIO: 0.5
+VERTICAL_FLIP: 1
+VERTICAL_FLIP_RATIO: 0.5
 
 TRAIN_FLIST: /content/train/train.tflist
 VAL_FLIST: /content/val/val.tflist
