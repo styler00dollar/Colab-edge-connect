@@ -10,6 +10,7 @@
 - Added tensorboardX.
 - Removed checkpoint overwriting.
 - Original code only has center crop with resize. This fork also includes random crop without resize.
+- Added random flip.
 
 ### Random Info:
 - If you want to continue training, then rename the latest checkpoints to ```InpaintingModel_dis.pth``` and ```InpaintingModel_gen.pth``` and simply start training again with ```python train.py --model 3 --checkpoints /path/model-checkpoints```.
@@ -18,7 +19,7 @@
 - Your dataset can have any dimension, but the dimension for testing needs to be dividable by 4. If not, an error will appear due to network limitations. Some code for that is in the Colab notebook.
 - Place config file inside the checkpoints folder.
 - Training not compatible with new pytorch. Use pytorch 1.1. The original code is technically incorrect and does not pass checks, which were introduced in new versions.
-- During training, the images for training will be generated with centercrop and then resize afterwards. The only augmentation (aside the added differentiable augmentation) is vertical flip.
+- During training, the images for training will be generated with centercrop and then resize afterwards. The only augmentation (aside the added differentiable augmentation) is vertical flip. (I think. I can't see any flip code, but I saw some flipped pictures.)
 - Do not input files smaller than INPUT_SIZE. The original code will crash.
 
 ### TODO:
