@@ -90,6 +90,7 @@ class BaseModel(nn.Module):
         self.name = name
         self.config = config
         self.iteration = 0
+        self.mosaic_test = config.MOSAIC_TEST
 
 		# loading previous weights
         self.gen_weights_path = os.path.join(config.PATH, name + '_gen.pth')
@@ -328,7 +329,10 @@ class InpaintingModel(BaseModel):
         return outputs, gen_loss, dis_loss, logs
 
     def forward(self, images, edges, masks):
-        images_masked = (images * (1 - masks).float()) + masks
+        if (self.mosaic_test == 0):
+          images_masked = (images * (1 - masks).float()) + masks
+        else:
+          images_masked = images
         inputs = torch.cat((images_masked, edges), dim=1)
         outputs = self.generator(inputs)                                    # in: [rgb(3) + edge(1)]
         return outputs
