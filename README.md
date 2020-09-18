@@ -16,6 +16,12 @@
 - The input for images needs to be PNG RGB24 to avoid errors. The masks need to be a one channel B/W image.
 - Your dataset can have any dimension, but the dimension for testing needs to be dividable by 4. If not, an error will appear due to network limitations. Some code for that is in the Colab notebook.
 - Place config file inside the checkpoints folder.
+- Training not compatible with new pytorch. Use pytorch 1.1. The original code is technically incorrect and does not pass checks, which were introduced in new versions.
+- During training, the images for training will be generated with centercrop and then resize afterwards. The only augmentation (aside the added differentiable augmentation) is vertical flip.
+
+### TODO:
+- Random crop instead of center crop.
+- Test with custom input data instead of white area behind mask.
 
 ### Introduction:
 We develop a new approach for image inpainting that does a better job of reproducing filled regions exhibiting fine details inspired by our understanding of how artists work: *lines first, color next*. We propose a two-stage adversarial model EdgeConnect that comprises of an edge generator followed by an image completion network. The edge generator hallucinates edges of the missing region (both regular and irregular) of the image, and the image completion network fills in the missing regions using hallucinated edges as a priori. Detailed description of the system can be found in our [paper](https://arxiv.org/abs/1901.00212).
