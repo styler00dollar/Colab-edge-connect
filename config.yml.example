@@ -12,7 +12,8 @@ HORIZONTAL_FLIP: 1      # flip in all directions (currently not sure where and i
 HORIZONTAL_FLIP_RATIO: 0.5
 VERTICAL_FLIP: 1
 VERTICAL_FLIP_RATIO: 0.5
-MOSAIC_TEST: 1      
+MOSAIC_TEST: 0      # Currently experimental. Inputs randomly resized image, which is overlayed with mask to the generator. Preview images during training won't show the real inputs. Currently 256x256 hardcoded.
+USE_AMP: 0              # Mixed precision training. Currently experimental. Will show a lot of Nan/Inf errors, but it seems to train fine.
 
 TRAIN_FLIST: /content/train/train.tflist
 VAL_FLIST: /content/val/val.tflist
