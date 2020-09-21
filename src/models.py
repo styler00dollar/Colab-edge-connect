@@ -10,6 +10,7 @@ import torch.nn.functional as nnf
 import random
 
 #torch.autograd.set_detect_anomaly(True)
+scaler = torch.cuda.amp.GradScaler() 
 
 def DiffAugment(x, policy='', channels_first=True):
     if policy:
@@ -272,6 +273,8 @@ class InpaintingModel(BaseModel):
             betas=(config.BETA1, config.BETA2)
         )
 
+        self.use_amp = config.USE_AMP
+
     def process(self, images, edges, masks):
         self.iteration += 1
 
@@ -289,46 +292,89 @@ class InpaintingModel(BaseModel):
         else:
           outputs = self(images, edges, masks)
 
-        # process outputs
-        #outputs = self(images, edges, masks)
-        gen_loss = 0
-        dis_loss = 0
+        if self.use_amp == 1:
+          with torch.cuda.amp.autocast(): 
+            # process outputs
+            #outputs = self(images, edges, masks)
+            gen_loss = 0
+            dis_loss = 0
 
 
-        # discriminator loss
-        dis_input_real = images
-        dis_input_fake = outputs.detach()
-        #real_scores = Discriminator(DiffAugment(reals, policy=policy))
-        dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
-        dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
-        dis_real_loss = self.adversarial_loss(dis_real, True, True)
-        dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
-        dis_loss += (dis_real_loss + dis_fake_loss) / 2
+            # discriminator loss
+            dis_input_real = images
+            dis_input_fake = outputs.detach()
+            #real_scores = Discriminator(DiffAugment(reals, policy=policy))
+            dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
+            dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+            dis_real_loss = self.adversarial_loss(dis_real, True, True)
+            dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
+            dis_loss += (dis_real_loss + dis_fake_loss) / 2
 
 
-        # generator adversarial loss
-        gen_input_fake = outputs
-        #real_scores = Discriminator(DiffAugment(reals, policy=policy))
-        gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
-        gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
-        gen_loss += gen_gan_loss
+            # generator adversarial loss
+            gen_input_fake = outputs
+            #real_scores = Discriminator(DiffAugment(reals, policy=policy))
+            gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+            gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
+            gen_loss += gen_gan_loss
 
 
-        # generator l1 loss
-        gen_l1_loss = self.l1_loss(outputs, images) * self.config.L1_LOSS_WEIGHT / torch.mean(masks)
-        gen_loss += gen_l1_loss
+            # generator l1 loss
+            gen_l1_loss = self.l1_loss(outputs, images) * self.config.L1_LOSS_WEIGHT / torch.mean(masks)
+            gen_loss += gen_l1_loss
 
 
-        # generator perceptual loss
-        gen_content_loss = self.perceptual_loss(outputs, images)
-        gen_content_loss = gen_content_loss * self.config.CONTENT_LOSS_WEIGHT
-        gen_loss += gen_content_loss
+            # generator perceptual loss
+            gen_content_loss = self.perceptual_loss(outputs, images)
+            gen_content_loss = gen_content_loss * self.config.CONTENT_LOSS_WEIGHT
+            gen_loss += gen_content_loss
 
 
-        # generator style loss
-        gen_style_loss = self.style_loss(outputs * masks, images * masks)
-        gen_style_loss = gen_style_loss * self.config.STYLE_LOSS_WEIGHT
-        gen_loss += gen_style_loss
+            # generator style loss
+            gen_style_loss = self.style_loss(outputs * masks, images * masks)
+            gen_style_loss = gen_style_loss * self.config.STYLE_LOSS_WEIGHT
+            gen_loss += gen_style_loss
+        else:
+          # process outputs
+          #outputs = self(images, edges, masks)
+          gen_loss = 0
+          dis_loss = 0
+
+
+          # discriminator loss
+          dis_input_real = images
+          dis_input_fake = outputs.detach()
+          #real_scores = Discriminator(DiffAugment(reals, policy=policy))
+          dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
+          dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+          dis_real_loss = self.adversarial_loss(dis_real, True, True)
+          dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
+          dis_loss += (dis_real_loss + dis_fake_loss) / 2
+
+
+          # generator adversarial loss
+          gen_input_fake = outputs
+          #real_scores = Discriminator(DiffAugment(reals, policy=policy))
+          gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+          gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
+          gen_loss += gen_gan_loss
+
+
+          # generator l1 loss
+          gen_l1_loss = self.l1_loss(outputs, images) * self.config.L1_LOSS_WEIGHT / torch.mean(masks)
+          gen_loss += gen_l1_loss
+
+
+          # generator perceptual loss
+          gen_content_loss = self.perceptual_loss(outputs, images)
+          gen_content_loss = gen_content_loss * self.config.CONTENT_LOSS_WEIGHT
+          gen_loss += gen_content_loss
+
+
+          # generator style loss
+          gen_style_loss = self.style_loss(outputs * masks, images * masks)
+          gen_style_loss = gen_style_loss * self.config.STYLE_LOSS_WEIGHT
+          gen_loss += gen_style_loss
 
 
         # create logs
@@ -354,8 +400,14 @@ class InpaintingModel(BaseModel):
         return outputs
 
     def backward(self, gen_loss=None, dis_loss=None):
-        dis_loss.backward(retain_graph = True)
-        gen_loss.backward()
+        #dis_loss.backward(retain_graph = True)
+        #gen_loss.backward()
+        scaler.scale(dis_loss).backward(retain_graph = True) 
+        scaler.scale(gen_loss).backward() 
 
-        self.gen_optimizer.step()
-        self.dis_optimizer.step()
+        #self.gen_optimizer.step()
+        #self.dis_optimizer.step()
+        scaler.step(self.gen_optimizer) 
+        scaler.step(self.dis_optimizer) 
+
+        scaler.update() 
