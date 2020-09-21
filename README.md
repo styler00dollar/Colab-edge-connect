@@ -11,7 +11,7 @@
 - Removed checkpoint overwriting.
 - Original code only has center crop with resize. This fork also includes random crop without resize.
 - Added random flip.
-- Pytorch 1.6 compatible (currently not tested)
+- Pytorch 1.6 compatible (+AMP) (Currently not tested, but a quick test shows that it works. Currently printing some warnings.)
 
 ### Random Info:
 - If you want to continue training, then rename the latest checkpoints to ```InpaintingModel_dis.pth``` and ```InpaintingModel_gen.pth``` and simply start training again with ```python train.py --model 3 --checkpoints /path/model-checkpoints```.
