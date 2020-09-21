@@ -39,7 +39,15 @@ class AdversarialLoss(nn.Module):
 
         else:
             labels = (self.real_label if is_real else self.fake_label).expand_as(outputs)
-            loss = self.criterion(outputs, labels)
+            # old loss
+            #loss = self.criterion(outputs, labels)
+            
+            # old loss is not compatible with amp. 2 loss alternatives.
+            # using BCE loss
+            #loss = torch.nn.functional.binary_cross_entropy_with_logits(outputs, labels)
+            
+            criterion = torch.nn.BCEWithLogitsLoss()
+            loss = criterion(outputs, labels)
             return loss
 
 
