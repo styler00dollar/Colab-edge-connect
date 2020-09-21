@@ -11,6 +11,7 @@
 - Removed checkpoint overwriting.
 - Original code only has center crop with resize. This fork also includes random crop without resize.
 - Added random flip.
+- Pytorch 1.6 compatible (currently not tested)
 
 ### Random Info:
 - If you want to continue training, then rename the latest checkpoints to ```InpaintingModel_dis.pth``` and ```InpaintingModel_gen.pth``` and simply start training again with ```python train.py --model 3 --checkpoints /path/model-checkpoints```.
@@ -18,7 +19,7 @@
 - The input for images needs to be PNG RGB24 to avoid errors. The masks need to be a one channel B/W image.
 - Your dataset can have any dimension, but the dimension for testing needs to be dividable by 4. If not, an error will appear due to network limitations. Some code for that is in the Colab notebook.
 - Place config file inside the checkpoints folder.
-- Training not compatible with new pytorch. Use pytorch 1.1. The original code is technically incorrect and does not pass checks, which were introduced in new versions.
+- Old training is not compatible with new pytorch. Use pytorch 1.1 if you want to use the original code. The original code is technically incorrect and does not pass checks, which were introduced in new versions. Slight modifications seem to fix this.
 - During training, the images for training will be generated with centercrop and then resize afterwards. The only augmentation (aside the added differentiable augmentation) is vertical flip. (I think. I can't see any flip code, but I saw some flipped pictures.)
 - Do not input files smaller than INPUT_SIZE. The original code will crash.
 
