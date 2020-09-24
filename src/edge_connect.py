@@ -156,7 +156,12 @@ class EdgeConnect():
                     else:
                         outputs = edges
 
-                    outputs, gen_loss, dis_loss, logs = self.inpaint_model.process(images, outputs.detach(), masks)
+                    if self.mosaic_test == True:
+                      mosaic_size = int(random.triangular(int(min(256*0.01, 256*0.01)), int(min(256*0.2, 256*0.2)), int(min(256*0.0625, 256*0.0625))))
+                      outputs, gen_loss, dis_loss, logs = self.inpaint_model.process(images, outputs.detach(), masks, mosaic_size)
+                    else:
+                      outputs, gen_loss, dis_loss, logs = self.inpaint_model.process(images, outputs.detach(), masks)
+
                     outputs_merged = (outputs * masks) + (images * (1 - masks))
 
                     # metrics
@@ -218,7 +223,10 @@ class EdgeConnect():
 
                 # sample model at checkpoints
                 if self.config.SAMPLE_INTERVAL and iteration % self.config.SAMPLE_INTERVAL == 0:
-                    self.sample()
+                    if self.mosaic_test == True:
+                      self.sample(mosaic_size)
+                    else:
+                      self.sample() # save test images during training
 
                 # evaluate model at checkpoints
                 if self.config.EVAL_INTERVAL and iteration % self.config.EVAL_INTERVAL == 0:
@@ -363,7 +371,7 @@ class EdgeConnect():
 
         print('\nEnd test....')
 
-    def sample(self, it=None):
+    def sample(self, mosaic_size=None, it=None):
         # do not sample when validation set is empty
         if len(self.val_dataset) == 0:
             return
@@ -392,7 +400,16 @@ class EdgeConnect():
         # inpaint with edge model / joint model
         else:
             iteration = self.inpaint_model.iteration
-            inputs = (images * (1 - masks)) + masks
+
+            if mosaic_size != None:
+              images_mosaic = nnf.interpolate(images, size=(mosaic_size, mosaic_size), mode='nearest')
+              images_mosaic = nnf.interpolate(images_mosaic, size=(256, 256), mode='nearest')
+              inputs = (images * (1 - masks).float()) + (images_mosaic * (masks).float())
+              #outputs = self(images_mosaic, edges, masks)
+            else:
+              inputs = (images * (1 - masks)) + masks
+            
+            
             outputs = self.edge_model(images_gray, edges, masks).detach()
             edges = (outputs * masks + edges * (1 - masks)).detach()
             outputs = self.inpaint_model(images, edges, masks)
