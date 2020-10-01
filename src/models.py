@@ -87,7 +87,7 @@ import torch.nn as nn
 import torch.optim as optim
 from .networks import InpaintGenerator, EdgeGenerator, Discriminator
 from .loss import AdversarialLoss, PerceptualLoss, StyleLoss
-
+import contextual_loss
 
 class BaseModel(nn.Module):
     def __init__(self, name, config):
@@ -253,6 +253,11 @@ class InpaintingModel(BaseModel):
         style_loss = StyleLoss()
         adversarial_loss = AdversarialLoss(type=config.GAN_LOSS)
 
+        L1CosineSim_similarity = torch.nn.CosineSimilarity(dim=1, eps=1e-20)
+        L1CosineSim_l1_loss = nn.L1Loss(reduction='mean')
+        #L1CosineSim_loss_lambda = 5
+        ContextualLoss = contextual_loss.ContextualLoss()
+
         self.add_module('generator', generator)
         self.add_module('discriminator', discriminator)
 
@@ -260,6 +265,11 @@ class InpaintingModel(BaseModel):
         self.add_module('perceptual_loss', perceptual_loss)
         self.add_module('style_loss', style_loss)
         self.add_module('adversarial_loss', adversarial_loss)
+
+        self.add_module('L1CosineSim_similarity', L1CosineSim_similarity)
+        self.add_module('L1CosineSim_l1_loss', L1CosineSim_l1_loss)
+        #self.add_module('L1CosineSim_loss_lambda', L1CosineSim_loss_lambda)
+        self.add_module('ContextualLoss', ContextualLoss)
 
         self.gen_optimizer = optim.Adam(
             params=generator.parameters(),
@@ -320,9 +330,17 @@ class InpaintingModel(BaseModel):
 
 
             # generator l1 loss
-            gen_l1_loss = self.l1_loss(outputs, images) * self.config.L1_LOSS_WEIGHT / torch.mean(masks)
-            gen_loss += gen_l1_loss
+            #gen_l1_loss = self.l1_loss(outputs, images) * self.config.L1_LOSS_WEIGHT / torch.mean(masks)
+            #gen_loss += gen_l1_loss
 
+            # generator L1CosineSim
+            # https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/loss.py
+            cosine_term = (1 - self.L1CosineSim_similarity(outputs, images)).mean()
+            gen_loss += self.L1CosineSim_l1_loss(outputs, images) + 5 * cosine_term # L1CosineSim_loss_lambda = 5
+
+            # generator contextual loss
+            # https://github.com/S-aiueo32/contextual_loss_pytorch
+            #gen_loss += self.ContextualLoss(outputs, images)
 
             # generator perceptual loss
             gen_content_loss = self.perceptual_loss(outputs, images)
@@ -361,9 +379,17 @@ class InpaintingModel(BaseModel):
 
 
           # generator l1 loss
-          gen_l1_loss = self.l1_loss(outputs, images) * self.config.L1_LOSS_WEIGHT / torch.mean(masks)
-          gen_loss += gen_l1_loss
+          #gen_l1_loss = self.l1_loss(outputs, images) * self.config.L1_LOSS_WEIGHT / torch.mean(masks)
+          #gen_loss += gen_l1_loss
 
+          # generator L1CosineSim
+          # https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/loss.py
+          cosine_term = (1 - self.L1CosineSim_similarity(outputs, images)).mean()
+          gen_loss += self.L1CosineSim_l1_loss(outputs, images) + 5 * cosine_term # L1CosineSim_loss_lambda = 5
+
+          # generator contextual loss
+          # https://github.com/S-aiueo32/contextual_loss_pytorch
+          #gen_loss += self.ContextualLoss(outputs, images)
 
           # generator perceptual loss
           gen_content_loss = self.perceptual_loss(outputs, images)
@@ -376,7 +402,7 @@ class InpaintingModel(BaseModel):
           gen_style_loss = gen_style_loss * self.config.STYLE_LOSS_WEIGHT
           gen_loss += gen_style_loss
 
-
+        """
         # create logs
         logs = [
             ("l_d2", dis_loss.item()),
@@ -385,7 +411,8 @@ class InpaintingModel(BaseModel):
             ("l_per", gen_content_loss.item()),
             ("l_sty", gen_style_loss.item()),
         ]
-
+        """
+        logs = []
         return outputs, gen_loss, dis_loss, logs
 
     def forward(self, images, edges, masks):
