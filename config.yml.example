@@ -1,6 +1,6 @@
 MODE: 1             # 1: train, 2: test, 3: eval
 MODEL: 3            # 1: edge model, 2: inpaint model, 3: edge-inpaint model, 4: joint model
-MASK: 1             # 1: random block, 2: half, 3: external, 4: (external, random block), 5: (external, random block, half)
+MASK: 5             # 1: random block, 2: half, 3: external, 4: (external, random block), 5: (external, random block, half)
 EDGE: 1             # 1: canny, 2: external
 NMS: 1              # 0: no non-max-suppression, 1: applies non-max-suppression on the external edges by multiplying by Canny
 SEED: 10            # random seed
@@ -14,6 +14,40 @@ VERTICAL_FLIP: 1
 VERTICAL_FLIP_RATIO: 0.5
 MOSAIC_TEST: 0      # Currently experimental. Inputs randomly resized image, which is overlayed with mask to the generator. Preview images during training won't show the real inputs. Currently 256x256 hardcoded.
 USE_AMP: 0              # Mixed precision training. Currently experimental. Will show a lot of Nan/Inf errors, but it seems to train fine.
+
+BATCH_SIZE: 1                 # input batch size for training
+INPUT_SIZE: 128               # input image size for training 0 for original size
+
+# Original Default: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'DEFAULT_GAN']
+GENERATOR_LOSS: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'DEFAULT_GAN', 'HFEN'] # Options: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'NEW_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual']
+
+# default loss
+INPAINT_ADV_LOSS_WEIGHT: 0.1  # adversarial loss weight
+CONTENT_LOSS_WEIGHT: 0.1      # perceptual loss weight
+STYLE_LOSS_WEIGHT: 250        # style loss weight
+L1_LOSS_WEIGHT: 1             # l1 loss weight
+
+DEFAULT_GAN_LOSS: nsgan       # nsgan | lsgan | hinge
+GAN_POOL_SIZE: 0              # fake images pool size
+
+# new loss functions (values not tested)
+NEW_GAN_WEIGHT: 5e-3
+NEW_GAN_LOSS: 'hinge'         #vanilla, lsgan, srpgan, nsgan, BCE, hinge, wgan-gp (Only hinge seems not to crash, added GAN does not seem to work properly. This option is not really recommended.)
+
+L1_WEIGHT: 0.01               # using new L1
+HFEN_WEIGHT: 0.1              # high frequency error norm (HFEN) weight
+TV_WEIGHT: 0.000001           # total variation loss weight
+ElasticLoss_WEIGHT: 0.01
+RelativeL1_WEIGHT: 0.01 
+L1CosineSim_WEIGHT: 0.01 
+ClipL1_WEIGHT: 0.01 
+FFT_WEIGHT: 0.01 
+OF_WEIGHT: 0.01               # Overflow loss weight
+GP_WEIGHT: 0.01               # Gradient Profile (GP) loss weight
+CP_WEIGHT: 0.01               # Color Profile (CP) loss weight
+Contextual_WEIGHT: 10.01 
+HFEN_TYPE: 'Charbonnier' #L1, MSE, CharbonnierLoss(), Elastic, Relative, L1Cosine
+
 
 TRAIN_FLIST: /content/train/train.tflist
 VAL_FLIST: /content/val/val.tflist
@@ -31,23 +65,16 @@ LR: 0.0001                    # learning rate
 D2G_LR: 0.1                   # discriminator/generator learning rate ratio
 BETA1: 0.0                    # adam optimizer beta1
 BETA2: 0.9                    # adam optimizer beta2
-BATCH_SIZE: 6                 # input batch size for training
-INPUT_SIZE: 256               # input image size for training 0 for original size
 SIGMA: 2                      # standard deviation of the Gaussian filter used in Canny edge detector (0: random, -1: no edge)
 MAX_ITERS: 1000000                # maximum number of iterations to train the model
 
 EDGE_THRESHOLD: 0.5           # edge detection threshold
-L1_LOSS_WEIGHT: 1             # l1 loss weight
-FM_LOSS_WEIGHT: 10            # feature-matching loss weight
-STYLE_LOSS_WEIGHT: 250        # style loss weight
-CONTENT_LOSS_WEIGHT: 0.1      # perceptual loss weight
-INPAINT_ADV_LOSS_WEIGHT: 0.1  # adversarial loss weight
+FM_LOSS_WEIGHT: 10            # feature-matching loss weight (used in EdgeModel)
 
-GAN_LOSS: nsgan               # nsgan | lsgan | hinge
-GAN_POOL_SIZE: 0              # fake images pool size
 
-SAVE_INTERVAL: 200           # how many iterations to wait before saving model (0: never)
-SAMPLE_INTERVAL: 20         # how many iterations to wait before sampling (0: never)
+# saving
+SAVE_INTERVAL: 5000           # how many iterations to wait before saving model (0: never)
+SAMPLE_INTERVAL: 100         # how many iterations to wait before sampling (0: never)
 SAMPLE_SIZE: 1               # number of images to sample
 EVAL_INTERVAL: 0              # how many iterations to wait before model evaluation (0: never)
 LOG_INTERVAL: 10              # how many iterations to wait before logging training status (0: never)
