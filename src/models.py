@@ -10,6 +10,9 @@ import numpy as np
 import torchvision.models.vgg as vgg
 from collections import OrderedDict
 
+import warnings
+warnings.filterwarnings("ignore")
+
 ################################################################################################################################################################################################
 # VGG MODEL
 # models.modules.architectures.perceptual
