@@ -12,7 +12,7 @@
 - Original code only has center crop with resize. This fork also includes random crop without resize.
 - Added random flip.
 - Pytorch 1.6 compatible (+AMP) (Currently not tested, but a quick test shows that it works. Printing warnings for some reason.)
-- [contextual_loss](https://github.com/S-aiueo32/contextual_loss_pytorch) (needs a lot of VRAM) + [L1CosineSim](https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/loss.py) (both untested)
+- [New loss functions.](https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/loss.py) Additional losses: HFENLoss (high frequency error norm (HFEN), TVLoss (total variation loss), ElasticLoss, RelativeL1, L1CosineSim, ClipL1, FFTloss, OFLoss (Overflow loss), GPLoss (Gradient Profile (GP) loss), CPLoss (Color Profile (CP) loss) and Contextual_Loss. (Does not crash and quick testing seems to indicate that it works. Everything experimental. ColorLoss, new GAN and GradientLoss do not work currently. Default weight values are not validated.)
 
 ### Random Info:
 - If you want to continue training, then rename the latest checkpoints to ```InpaintingModel_dis.pth``` and ```InpaintingModel_gen.pth``` and simply start training again with ```python train.py --model 3 --checkpoints /path/model-checkpoints```.
@@ -23,6 +23,7 @@
 - Old training is not compatible with new pytorch. Use pytorch 1.1 if you want to use the original code. The original code is technically incorrect and does not pass checks, which were introduced in new versions. Slight modifications seem to fix this.
 - During training, the images for training will be generated with centercrop and then resize afterwards. The only augmentation (aside the added differentiable augmentation) is vertical flip. (I think. I can't see any flip code, but I saw some flipped pictures.)
 - Do not input files smaller than INPUT_SIZE. The original code will crash.
+- New GAN is buggy and only works with hinge currently. You should probably use the default one.
 
 ### TODO:
 - Test with custom input data instead of white area behind mask.
