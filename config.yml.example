@@ -15,11 +15,11 @@ VERTICAL_FLIP_RATIO: 0.5
 MOSAIC_TEST: 0      # Currently experimental. Inputs randomly resized image, which is overlayed with mask to the generator. Preview images during training won't show the real inputs. Currently 256x256 hardcoded.
 USE_AMP: 0              # Mixed precision training. Currently experimental. Will show a lot of Nan/Inf errors, but it seems to train fine.
 
-BATCH_SIZE: 1                 # input batch size for training
-INPUT_SIZE: 128               # input image size for training 0 for original size
+BATCH_SIZE: 6                 # input batch size for training
+INPUT_SIZE: 256               # input image size for training 0 for original size
 
 # Original Default: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'DEFAULT_GAN']
-GENERATOR_LOSS: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'DEFAULT_GAN', 'HFEN'] # Options: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'NEW_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual']
+GENERATOR_LOSS: ['Adversarial', 'Perceptual', 'Style', 'RelativeL1', 'DEFAULT_GAN', 'HFEN', 'CP'] # Options: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'NEW_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual']
 
 # default loss
 INPAINT_ADV_LOSS_WEIGHT: 0.1  # adversarial loss weight
@@ -46,7 +46,7 @@ OF_WEIGHT: 0.01               # Overflow loss weight
 GP_WEIGHT: 0.01               # Gradient Profile (GP) loss weight
 CP_WEIGHT: 0.01               # Color Profile (CP) loss weight
 Contextual_WEIGHT: 10.01 
-HFEN_TYPE: 'Charbonnier' #L1, MSE, CharbonnierLoss(), Elastic, Relative, L1Cosine
+HFEN_TYPE: 'L1CosineSim' #L1, MSE, Charbonnier, Elastic, Relative, L1CosineSim
 
 
 TRAIN_FLIST: /content/train/train.tflist
@@ -66,7 +66,7 @@ D2G_LR: 0.1                   # discriminator/generator learning rate ratio
 BETA1: 0.0                    # adam optimizer beta1
 BETA2: 0.9                    # adam optimizer beta2
 SIGMA: 2                      # standard deviation of the Gaussian filter used in Canny edge detector (0: random, -1: no edge)
-MAX_ITERS: 1000000                # maximum number of iterations to train the model
+MAX_ITERS: 1000000            # maximum number of iterations to train the model
 
 EDGE_THRESHOLD: 0.5           # edge detection threshold
 FM_LOSS_WEIGHT: 10            # feature-matching loss weight (used in EdgeModel)
@@ -74,7 +74,7 @@ FM_LOSS_WEIGHT: 10            # feature-matching loss weight (used in EdgeModel)
 
 # saving
 SAVE_INTERVAL: 5000           # how many iterations to wait before saving model (0: never)
-SAMPLE_INTERVAL: 100         # how many iterations to wait before sampling (0: never)
-SAMPLE_SIZE: 1               # number of images to sample
+SAMPLE_INTERVAL: 100          # how many iterations to wait before sampling (0: never)
+SAMPLE_SIZE: 1                # number of images to sample
 EVAL_INTERVAL: 0              # how many iterations to wait before model evaluation (0: never)
 LOG_INTERVAL: 10              # how many iterations to wait before logging training status (0: never)
