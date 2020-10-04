@@ -22,7 +22,7 @@
 - Place config file inside the checkpoints folder.
 - Old training is not compatible with new pytorch. Use pytorch 1.1 if you want to use the original code. The original code is technically incorrect and does not pass checks, which were introduced in new versions. Slight modifications seem to fix this.
 - During training, the images for training will be generated with centercrop and then resize afterwards. The only augmentation (aside the added differentiable augmentation) is vertical flip. (I think. I can't see any flip code, but I saw some flipped pictures.)
-- Do not input files smaller than INPUT_SIZE. The original code will crash.
+- Try to not input files smaller than INPUT_SIZE. The original code does not like that. This fork has some code to make these files at least usable.
 - New GAN is buggy and only works with hinge currently. You should probably use the default one.
 
 ### Introduction:
