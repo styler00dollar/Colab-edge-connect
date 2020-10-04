@@ -10,8 +10,9 @@ from PIL import Image
 from scipy.misc import imread
 from skimage.feature import canny
 from skimage.color import rgb2gray, gray2rgb
+from skimage.transform import rescale
 from .utils import create_mask
-
+import cv2
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, config, flist, edge_flist, mask_flist, augment=True, training=True):
@@ -32,6 +33,8 @@ class Dataset(torch.utils.data.Dataset):
         self.horizontal_flip_ratio = config.HORIZONTAL_FLIP_RATIO
         self.vertical_flip = config.VERTICAL_FLIP
         self.vertical_flip_ratio = config.VERTICAL_FLIP_RATIO
+
+        self.config = config
 
         # in test mode, there's a one-to-one relationship between mask and image
         # masks are loaded non random
@@ -65,9 +68,51 @@ class Dataset(torch.utils.data.Dataset):
         if len(img.shape) < 3:
             img = gray2rgb(img)
 
-        # resize/crop if needed
-        if size != 0:
-            img = self.resize(img, size, size)
+        # resize
+
+        # rescale image to minimum needed INPUT_SIZE (keeping aspect ratio) (not working)
+        """
+        if img.shape[0] < size or img.shape[1] < size:
+            imgh, imgw = img.shape[0:2]
+            small_side = np.minimum(imgh, imgw)
+            img = rescale(img, (size/small_side)*1.1, anti_aliasing=False)
+        """
+
+        # if image is smaller than INPUT_SIZE, then resize to needed dimension
+        if img.shape[0] < size or img.shape[1] < size:
+            img = cv2.resize(img, (size, size), cv2.INTER_NEAREST)
+        else:
+          #if img.shape[0] != size or img.shape[1] != size:
+          if size != 0 and self.config.RESIZE_MODE == 'random_resize':
+              imgh, imgw = img.shape[0:2]
+              small_side = np.minimum(imgh, imgw)
+              random_resize_ratio = np.random.randint(self.config.INPUT_SIZE, small_side, size=1) / small_side
+              img = cv2.resize(img, (img.shape[0]*random_resize_ratio, img.shape[1]*random_resize_ratio), cv2.INTER_NEAREST)
+
+          if size != 0 and self.config.RESIZE_MODE == 'input_size_and_random_downscale':
+              if random.uniform(0, 1) < self.config.INPUT_SIZE_AND_RANDOM_DOWNSCALE_RATIO:
+                img = self.resize(img, size, size)
+              else:
+                random_resize_ratio = np.random.randint(self.config.INPUT_SIZE, img.shape[0], size=1) / img.shape[0]
+                img = cv2.resize(img, (img.shape[0]*random_resize_ratio, img.shape[1]*random_resize_ratio), cv2.INTER_NEAREST)
+
+          # crop
+          # randomly crop data
+          if size != 0 and self.config.CROP_MODE == 'random_crop':
+              x = random.randint(0, img.shape[1] - size)
+              y = random.randint(0, img.shape[0] - size)
+              img = img[y:y+size, x:x+size]
+
+          if size != 0 and self.config.CROP_MODE == 'center_crop':
+            imgh, imgw = img.shape[0:2]
+            if centerCrop and imgh != imgw:
+                side = np.minimum(imgh, imgw)
+                j = (imgh - side) // 2
+                i = (imgw - side) // 2
+                img = img[j:j + side, i:i + side, ...]
+            img = scipy.misc.imresize(img, [size, size])
+
+
 
         # flip with numpy
         if self.horizontal_flip == 1:
@@ -168,7 +213,7 @@ class Dataset(torch.utils.data.Dataset):
         img = Image.fromarray(img)
         img_t = F.to_tensor(img).float()
         return img_t
-
+    """
     def resize(self, img, height, width, centerCrop=True):
         if self.random_crop == 1:
           # randomly crop data
@@ -185,6 +230,20 @@ class Dataset(torch.utils.data.Dataset):
               i = (imgw - side) // 2
               img = img[j:j + side, i:i + side, ...]
           img = scipy.misc.imresize(img, [height, width])
+        return img
+    """
+    def resize(self, img, height, width, centerCrop=True):
+        imgh, imgw = img.shape[0:2]
+
+        if centerCrop and imgh != imgw:
+            # center crop
+            side = np.minimum(imgh, imgw)
+            j = (imgh - side) // 2
+            i = (imgw - side) // 2
+            img = img[j:j + side, i:i + side, ...]
+
+        img = scipy.misc.imresize(img, [height, width])
+
         return img
 
     def load_flist(self, flist):
