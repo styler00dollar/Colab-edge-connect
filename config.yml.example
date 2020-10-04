@@ -7,15 +7,21 @@ SEED: 10            # random seed
 GPU: [0]            # list of gpu ids
 DEBUG: 0            # turns on debugging mode
 VERBOSE: 0          # turns on verbose mode in the output console
-RANDOM_CROP: 1      # instead of center crop, a random crop without resize will be perofrmed
-HORIZONTAL_FLIP: 1      # flip in all directions (currently not sure where and if is in the original code. I just added my flip.)
-HORIZONTAL_FLIP_RATIO: 0.5
-VERTICAL_FLIP: 1
-VERTICAL_FLIP_RATIO: 0.5
-MOSAIC_TEST: 0      # Currently experimental. Inputs randomly resized image, which is overlayed with mask to the generator. Preview images during training won't show the real inputs. Currently 256x256 hardcoded.
-USE_AMP: 0              # Mixed precision training. Currently experimental. Will show a lot of Nan/Inf errors, but it seems to train fine.
 
-BATCH_SIZE: 6                 # input batch size for training
+# input
+# edge-connect default: 'input_size', 'center_crop'
+RESIZE_MODE: 'random_resize'     # 'input_size', 'random_resize', 'input_size_and_random_downscale' # keeps aspect ratio
+CROP_MODE: 'random_crop'      # 'random_crop', 'center_crop' # center_crop assumes that the smaller axis is the INPUT_SIZE. 
+FLIP_MODE: ['horizontal_flip', 'vertical_flip'] # ['horizontal_flip', 'vertical_flip']
+# ratio
+INPUT_SIZE_AND_RANDOM_DOWNSCALE_RATIO: 0.5
+HORIZONTAL_FLIP_RATIO: 0.5
+VERTICAL_FLIP_RATIO: 0.5
+
+MOSAIC_TEST: 0                # Currently experimental. Inputs randomly resized image, which is overlayed with mask to the generator. Preview images during training won't show the real inputs. Currently 256x256 hardcoded.
+USE_AMP: 0                    # Mixed precision training. Currently experimental. Will show a lot of Nan/Inf errors, but it seems to train fine.
+
+BATCH_SIZE: 1                 # input batch size for training
 INPUT_SIZE: 256               # input image size for training 0 for original size
 
 # Original Default: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'DEFAULT_GAN']
@@ -46,7 +52,7 @@ OF_WEIGHT: 0.01               # Overflow loss weight
 GP_WEIGHT: 0.01               # Gradient Profile (GP) loss weight
 CP_WEIGHT: 0.01               # Color Profile (CP) loss weight
 Contextual_WEIGHT: 10.01 
-HFEN_TYPE: 'L1CosineSim' #L1, MSE, Charbonnier, Elastic, Relative, L1CosineSim
+HFEN_TYPE: 'Charbonnier' #L1, MSE, Charbonnier, Elastic, Relative, L1CosineSim
 
 
 TRAIN_FLIST: /content/train/train.tflist
