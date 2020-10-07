@@ -11,6 +11,7 @@
 - Added random flip.
 - Added resize and crop options.
 - Pytorch 1.6 compatible (+AMP) (Currently not tested, but a quick test shows that it works. Printing warnings for some reason.)
+- [New discriminator](https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/architectures/discriminators.py). Currently the only alternative to the default is PixelDiscriminator.
 - [New loss functions.](https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/loss.py) Additional losses: HFENLoss (high frequency error norm (HFEN), TVLoss (total variation loss), ElasticLoss, RelativeL1, L1CosineSim, ClipL1, FFTloss, OFLoss (Overflow loss), GPLoss (Gradient Profile (GP) loss), CPLoss (Color Profile (CP) loss) and Contextual_Loss. (Does not crash and quick testing seems to indicate that it works. Everything experimental. ColorLoss, new GAN and GradientLoss do not work currently. Default weight values are not validated.)
 - Resize to needed dimension, if image is smaller than INPUT_SIZE. (Currently not keeping aspect ratio, but it's better than nothing.)
 
