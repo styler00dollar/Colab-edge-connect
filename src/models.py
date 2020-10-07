@@ -1157,11 +1157,62 @@ class PixelDiscriminator(nn.Module):
         """Standard forward."""
         return self.net(input)
 
+class NLayerDiscriminator(nn.Module):
+    r"""
+    PatchGAN discriminator
+    https://arxiv.org/pdf/1611.07004v3.pdf
+    https://arxiv.org/pdf/1803.07422.pdf
+    """
 
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_sigmoid=False, getIntermFeat=False):
+        """Construct a PatchGAN discriminator
+        Parameters:
+            input_nc (int)  -- the number of channels in input images
+            ndf (int)       -- the number of filters in the last conv layer
+            n_layers (int)  -- the number of conv layers in the discriminator
+            norm_layer      -- normalization layer
+        """
+        super(NLayerDiscriminator, self).__init__()
+        '''
+        if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+        '''
+        #self.getIntermFeat = getIntermFeat # not used for now
+        #use_sigmoid not used for now
+        #TODO: test if there are benefits by incorporating the use of intermediate features from pix2pixHD
 
+        use_bias = False
+        kw = 4
+        padw = 1 # int(np.ceil((kw-1.0)/2))
 
+        sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
+        nf_mult = 1
+        nf_mult_prev = 1
+        for n in range(1, n_layers):  # gradually increase the number of filters
+            nf_mult_prev = nf_mult
+            nf_mult = min(2 ** n, 8)
+            sequence += [
+                nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=2, padding=padw, bias=use_bias),
+                norm_layer(ndf * nf_mult),
+                nn.LeakyReLU(0.2, True)
+            ]
 
+        nf_mult_prev = nf_mult
+        nf_mult = min(2 ** n_layers, 8)
+        sequence += [
+            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=1, padding=padw, bias=use_bias),
+            norm_layer(ndf * nf_mult),
+            nn.LeakyReLU(0.2, True)
+        ]
 
+        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]  # output 1 channel prediction map
+        self.model = nn.Sequential(*sequence)
+
+    def forward(self, x):
+        """Standard forward."""
+        return self.model(x)
 
 
 ################################################################################################################################################################################################
@@ -2143,8 +2194,8 @@ class BaseModel(nn.Module):
               self.discriminator.load_state_dict(data['discriminator'])
             if self.config.DISCRIMINATOR == 'pixel':
               self.PixelDiscriminator.load_state_dict(data['discriminator'])
-            #if self.config.DISCRIMINATOR == 'multiscale':
-            #  self.PixelDiscriminator.load_state_dict(data['discriminator'])
+            if self.config.DISCRIMINATOR == 'patch':
+              self.NLayerDiscriminator.load_state_dict(data['discriminator'])
 
     def save(self):
         print('\nsaving %s...\n' % self.name)
@@ -2162,10 +2213,10 @@ class BaseModel(nn.Module):
           torch.save({
               'discriminator': self.PixelDiscriminator.state_dict()
           }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_dis.pth"))
-        #if self.config.DISCRIMINATOR == 'multiscale':
-        #  torch.save({
-        #      'discriminator': self.PixelDiscriminator.state_dict()
-        #  }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_dis.pth"))
+        if self.config.DISCRIMINATOR == 'patch':
+          torch.save({
+              'discriminator': self.NLayerDiscriminator.state_dict()
+          }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_dis.pth"))
 
 class EdgeModel(BaseModel):
     def __init__(self, config):
@@ -2297,9 +2348,9 @@ class InpaintingModel(BaseModel):
           _PixelDiscriminator = PixelDiscriminator(input_nc=3, ndf=64, norm_layer=nn.BatchNorm2d)
           self.add_module('PixelDiscriminator', _PixelDiscriminator)
         
-        #if self.config.DISCRIMINATOR == 'multiscale'
-        #  _PixelDiscriminator = PixelDiscriminator(input_nc=3, ndf=64, norm_layer=nn.BatchNorm2d)
-        #  self.add_module('PixelDiscriminator', _PixelDiscriminator)
+        if self.config.DISCRIMINATOR == 'patch':
+          _NLayerDiscriminator = NLayerDiscriminator(input_nc=3, ndf=64, norm_layer=nn.BatchNorm2d)
+          self.add_module('NLayerDiscriminator', _NLayerDiscriminator)
 
         self.add_module('l1_loss', l1_loss)
         self.add_module('perceptual_loss', perceptual_loss)
@@ -2374,8 +2425,13 @@ class InpaintingModel(BaseModel):
             use_vgg = True, net = 'vgg19', calc_type = 'regular')
         self.add_module('_Contextual_Loss', _Contextual_Loss)
 
-        pixel_criterion = torch.nn.BCEWithLogitsLoss()
-        self.add_module('pixel_criterion', pixel_criterion)
+        if self.config.DISCRIMINATOR == 'pixel':
+          pixel_criterion = torch.nn.BCEWithLogitsLoss()
+          self.add_module('pixel_criterion', pixel_criterion)
+
+        if self.config.DISCRIMINATOR == 'patch':
+          patch_criterion = torch.nn.BCEWithLogitsLoss()
+          self.add_module('patch_criterion', patch_criterion)
 
         self.gen_optimizer = optim.Adam(
             params=generator.parameters(),
@@ -2398,16 +2454,16 @@ class InpaintingModel(BaseModel):
               betas=(config.BETA1, config.BETA2)
           )
 
-        """        
-        if self.config.DISCRIMINATOR == 'multiscale':
+      
+        if self.config.DISCRIMINATOR == 'patch':
           self.dis_optimizer = optim.Adam(
               #params=discriminator.parameters(),
-              params=self.PixelDiscriminator.parameters(),
+              params=self.NLayerDiscriminator.parameters(),
               lr=float(config.LR) * float(config.D2G_LR),
               betas=(config.BETA1, config.BETA2)
           )
 
-        """
+
 
 
         self.use_amp = config.USE_AMP
@@ -2554,8 +2610,12 @@ class InpaintingModel(BaseModel):
             dis_real_loss = self.pixel_criterion(dis_fake, dis_real)
             dis_fake_loss = self.pixel_criterion(dis_real, dis_fake)
 
-          if self.config.DISCRIMINATOR == 'multiscale':
-            print("not implemented")
+          if self.config.DISCRIMINATOR == 'patch':
+            dis_real = self.NLayerDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
+            dis_fake = self.NLayerDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+
+            dis_real_loss = self.patch_criterion(dis_fake, dis_real)
+            dis_fake_loss = self.patch_criterion(dis_real, dis_fake)
 
           dis_loss += (dis_real_loss + dis_fake_loss) / 2
 
@@ -2569,6 +2629,8 @@ class InpaintingModel(BaseModel):
               gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
             if self.config.DISCRIMINATOR == 'pixel':
               gen_fake = self.PixelDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+            if self.config.DISCRIMINATOR == 'patch':
+              gen_fake = self.NLayerDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
 
             gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
             gen_loss += gen_gan_loss
