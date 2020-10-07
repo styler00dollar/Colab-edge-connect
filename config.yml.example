@@ -25,7 +25,7 @@ BATCH_SIZE: 1                 # input batch size for training
 INPUT_SIZE: 256               # input image size for training 0 for original size
 
 # Original Default: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'DEFAULT_GAN']
-DISCRIMINATOR: 'pixel'       # default, pixel, multiscale (multiscale not implemented)
+DISCRIMINATOR: 'patch'       # default, pixel, patch
 GENERATOR_LOSS: ['Adversarial', 'Perceptual', 'Style', 'RelativeL1', 'DEFAULT_GAN', 'HFEN', 'CP'] # Options: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'NEW_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual']
 
 # default loss
