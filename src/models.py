@@ -2497,13 +2497,32 @@ class InpaintingModel(BaseModel):
             dis_input_real = images
             dis_input_fake = outputs.detach()
             #real_scores = Discriminator(DiffAugment(reals, policy=policy))
-            dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
-            dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
-            dis_real_loss = self.adversarial_loss(dis_real, True, True)
-            dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
+
+            if self.config.DISCRIMINATOR == 'default':
+              dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
+              dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+
+              dis_real_loss = self.adversarial_loss(dis_real, True, True)
+              dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
+
+            if self.config.DISCRIMINATOR == 'pixel':
+              dis_real = self.PixelDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
+              dis_fake = self.PixelDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+
+              # not sure if implemented correctly
+              # https://www.programcreek.com/python/example/118843/torch.nn.BCEWithLogitsLoss
+
+              dis_real_loss = self.pixel_criterion(dis_fake, dis_real)
+              dis_fake_loss = self.pixel_criterion(dis_real, dis_fake)
+
+            if self.config.DISCRIMINATOR == 'patch':
+              dis_real = self.NLayerDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
+              dis_fake = self.NLayerDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+
+              dis_real_loss = self.patch_criterion(dis_fake, dis_real)
+              dis_fake_loss = self.patch_criterion(dis_real, dis_fake)
+
             dis_loss += (dis_real_loss + dis_fake_loss) / 2
-
-
 
 
             # original generator loss
@@ -2511,7 +2530,13 @@ class InpaintingModel(BaseModel):
             gen_input_fake = outputs
             
             if 'DEFAULT_GAN' in self.generator_loss:
-              gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+              if self.config.DISCRIMINATOR == 'default':
+                gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+              if self.config.DISCRIMINATOR == 'pixel':
+                gen_fake = self.PixelDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+              if self.config.DISCRIMINATOR == 'patch':
+                gen_fake = self.NLayerDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+
               gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
               gen_loss += gen_gan_loss
 
