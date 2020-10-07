@@ -1122,7 +1122,40 @@ def norm(x):
 
 
 
+# https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/architectures/discriminators.py
 
+class PixelDiscriminator(nn.Module):
+    """Defines a 1x1 PatchGAN discriminator (pixelGAN)"""
+
+    def __init__(self, input_nc, ndf=64, norm_layer=nn.BatchNorm2d):
+        """Construct a 1x1 PatchGAN discriminator
+        Parameters:
+            input_nc (int)  -- the number of channels in input images
+            ndf (int)       -- the number of filters in the last conv layer
+            norm_layer      -- normalization layer
+        """
+        super(PixelDiscriminator, self).__init__()
+        '''
+        if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+        '''
+        use_bias = False
+
+        self.net = [
+            nn.Conv2d(input_nc, ndf, kernel_size=1, stride=1, padding=0),
+            nn.LeakyReLU(0.2, True),
+            nn.Conv2d(ndf, ndf * 2, kernel_size=1, stride=1, padding=0, bias=use_bias),
+            norm_layer(ndf * 2),
+            nn.LeakyReLU(0.2, True),
+            nn.Conv2d(ndf * 2, 1, kernel_size=1, stride=1, padding=0, bias=use_bias)]
+
+        self.net = nn.Sequential(*self.net)
+
+    def forward(self, input):
+        """Standard forward."""
+        return self.net(input)
 
 
 
@@ -2106,7 +2139,12 @@ class BaseModel(nn.Module):
             else:
                 data = torch.load(self.dis_weights_path, map_location=lambda storage, loc: storage)
 
-            self.discriminator.load_state_dict(data['discriminator'])
+            if self.config.DISCRIMINATOR == 'default':
+              self.discriminator.load_state_dict(data['discriminator'])
+            if self.config.DISCRIMINATOR == 'pixel':
+              self.PixelDiscriminator.load_state_dict(data['discriminator'])
+            #if self.config.DISCRIMINATOR == 'multiscale':
+            #  self.PixelDiscriminator.load_state_dict(data['discriminator'])
 
     def save(self):
         print('\nsaving %s...\n' % self.name)
@@ -2115,10 +2153,19 @@ class BaseModel(nn.Module):
             'generator': self.generator.state_dict()
         }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_gen.pth"))
 
-        torch.save({
-            'discriminator': self.discriminator.state_dict()
-        }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_dis.pth"))
-
+        if self.config.DISCRIMINATOR == 'default':
+          torch.save({
+              #'discriminator': self.discriminator.state_dict()
+              'discriminator': self.PixelDiscriminator.state_dict()
+          }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_dis.pth"))
+        if self.config.DISCRIMINATOR == 'pixel':
+          torch.save({
+              'discriminator': self.PixelDiscriminator.state_dict()
+          }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_dis.pth"))
+        #if self.config.DISCRIMINATOR == 'multiscale':
+        #  torch.save({
+        #      'discriminator': self.PixelDiscriminator.state_dict()
+        #  }, os.path.join(self.config.PATH, self.name + "_" + str(self.iteration) + "_dis.pth"))
 
 class EdgeModel(BaseModel):
     def __init__(self, config):
@@ -2227,11 +2274,11 @@ class InpaintingModel(BaseModel):
         # generator input: [rgb(3) + edge(1)]
         # discriminator input: [rgb(3)]
         generator = InpaintGenerator()
-        discriminator = Discriminator(in_channels=3, use_sigmoid=config.GAN_LOSS != 'hinge')
+        """
         if len(config.GPU) > 1:
             generator = nn.DataParallel(generator, config.GPU)
             discriminator = nn.DataParallel(discriminator , config.GPU)
-
+        """
         # original loss
         l1_loss = nn.L1Loss()
         perceptual_loss = PerceptualLoss()
@@ -2241,7 +2288,18 @@ class InpaintingModel(BaseModel):
         self.generator_loss = config.GENERATOR_LOSS
 
         self.add_module('generator', generator)
-        self.add_module('discriminator', discriminator)
+
+        if self.config.DISCRIMINATOR == 'default':
+          discriminator = Discriminator(in_channels=3, use_sigmoid=config.GAN_LOSS != 'hinge')
+          self.add_module('discriminator', discriminator)
+
+        if self.config.DISCRIMINATOR == 'pixel':
+          _PixelDiscriminator = PixelDiscriminator(input_nc=3, ndf=64, norm_layer=nn.BatchNorm2d)
+          self.add_module('PixelDiscriminator', _PixelDiscriminator)
+        
+        #if self.config.DISCRIMINATOR == 'multiscale'
+        #  _PixelDiscriminator = PixelDiscriminator(input_nc=3, ndf=64, norm_layer=nn.BatchNorm2d)
+        #  self.add_module('PixelDiscriminator', _PixelDiscriminator)
 
         self.add_module('l1_loss', l1_loss)
         self.add_module('perceptual_loss', perceptual_loss)
@@ -2316,6 +2374,8 @@ class InpaintingModel(BaseModel):
             use_vgg = True, net = 'vgg19', calc_type = 'regular')
         self.add_module('_Contextual_Loss', _Contextual_Loss)
 
+        pixel_criterion = torch.nn.BCEWithLogitsLoss()
+        self.add_module('pixel_criterion', pixel_criterion)
 
         self.gen_optimizer = optim.Adam(
             params=generator.parameters(),
@@ -2323,11 +2383,32 @@ class InpaintingModel(BaseModel):
             betas=(config.BETA1, config.BETA2)
         )
 
-        self.dis_optimizer = optim.Adam(
-            params=discriminator.parameters(),
-            lr=float(config.LR) * float(config.D2G_LR),
-            betas=(config.BETA1, config.BETA2)
-        )
+        if self.config.DISCRIMINATOR == 'default':
+          self.dis_optimizer = optim.Adam(
+              params=discriminator.parameters(),
+              #params=self.PixelDiscriminator.parameters(),
+              lr=float(config.LR) * float(config.D2G_LR),
+              betas=(config.BETA1, config.BETA2)
+          )
+        if self.config.DISCRIMINATOR == 'pixel':
+          self.dis_optimizer = optim.Adam(
+              #params=discriminator.parameters(),
+              params=self.PixelDiscriminator.parameters(),
+              lr=float(config.LR) * float(config.D2G_LR),
+              betas=(config.BETA1, config.BETA2)
+          )
+
+        """        
+        if self.config.DISCRIMINATOR == 'multiscale':
+          self.dis_optimizer = optim.Adam(
+              #params=discriminator.parameters(),
+              params=self.PixelDiscriminator.parameters(),
+              lr=float(config.LR) * float(config.D2G_LR),
+              betas=(config.BETA1, config.BETA2)
+          )
+
+        """
+
 
         self.use_amp = config.USE_AMP
 
@@ -2455,13 +2536,28 @@ class InpaintingModel(BaseModel):
           dis_input_real = images
           dis_input_fake = outputs.detach()
           #real_scores = Discriminator(DiffAugment(reals, policy=policy))
-          dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
-          dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
-          dis_real_loss = self.adversarial_loss(dis_real, True, True)
-          dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
+
+          if self.config.DISCRIMINATOR == 'default':
+            dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
+            dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+
+            dis_real_loss = self.adversarial_loss(dis_real, True, True)
+            dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
+
+          if self.config.DISCRIMINATOR == 'pixel':
+            dis_real = self.PixelDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
+            dis_fake = self.PixelDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+
+            # not sure if implemented correctly
+            # https://www.programcreek.com/python/example/118843/torch.nn.BCEWithLogitsLoss
+
+            dis_real_loss = self.pixel_criterion(dis_fake, dis_real)
+            dis_fake_loss = self.pixel_criterion(dis_real, dis_fake)
+
+          if self.config.DISCRIMINATOR == 'multiscale':
+            print("not implemented")
+
           dis_loss += (dis_real_loss + dis_fake_loss) / 2
-
-
 
 
           # original generator loss
@@ -2469,7 +2565,11 @@ class InpaintingModel(BaseModel):
           gen_input_fake = outputs
           
           if 'DEFAULT_GAN' in self.generator_loss:
-            gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+            if self.config.DISCRIMINATOR == 'default':
+              gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+            if self.config.DISCRIMINATOR == 'pixel':
+              gen_fake = self.PixelDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+
             gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
             gen_loss += gen_gan_loss
 
