@@ -27,10 +27,11 @@ INPUT_SIZE: 256               # input image size for training 0 for original siz
 # Original Default: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'DEFAULT_GAN']
 DISCRIMINATOR: 'patch'       # default, pixel, patch
 DISCRIMINATOR_CALC: 'MSELoss'  # None, BCEWithLogitsLoss, MSELoss
+GENERATOR_CALC: 'MSELoss'      # None, BCEWithLogitsLoss, MSELoss
 GENERATOR_LOSS: ['Adversarial', 'Perceptual', 'Style', 'RelativeL1', 'DEFAULT_GAN', 'HFEN', 'CP'] # Options: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'NEW_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual']
 
 # default loss
-INPAINT_ADV_LOSS_WEIGHT: 0.1  # adversarial loss weight
+INPAINT_ADV_LOSS_WEIGHT: 0.1  # adversarial loss weight # maybe depricated
 CONTENT_LOSS_WEIGHT: 0.1      # perceptual loss weight
 STYLE_LOSS_WEIGHT: 250        # style loss weight
 L1_LOSS_WEIGHT: 1             # l1 loss weight
@@ -39,6 +40,10 @@ DEFAULT_GAN_LOSS: nsgan       # nsgan | lsgan | hinge
 GAN_POOL_SIZE: 0              # fake images pool size
 
 # new loss functions (values not tested)
+DISCRIMINATOR_FAKE_LOSS_WEIGHT: 0.1
+DISCRIMINATOR_REAL_LOSS_WEIGHT: 0.1
+GENERATOR_CALC_WEIGHT: 0.1
+
 NEW_GAN_WEIGHT: 5e-3
 NEW_GAN_LOSS: 'hinge'         #vanilla, lsgan, srpgan, nsgan, BCE, hinge, wgan-gp (Only hinge seems not to crash, added GAN does not seem to work properly. This option is not really recommended.)
 
