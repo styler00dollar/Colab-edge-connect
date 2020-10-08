@@ -2433,6 +2433,10 @@ class InpaintingModel(BaseModel):
           patch_criterion = torch.nn.BCEWithLogitsLoss()
           self.add_module('patch_criterion', patch_criterion)
 
+        if self.config.DISCRIMINATOR_CALC == 'MSELoss':
+          mse_criterion = nn.MSELoss()
+          self.add_module('mse_criterion', mse_criterion)
+
         self.gen_optimizer = optim.Adam(
             params=generator.parameters(),
             lr=float(config.LR),
@@ -2622,25 +2626,28 @@ class InpaintingModel(BaseModel):
             dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
             dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
 
-            dis_real_loss = self.adversarial_loss(dis_real, True, True)
-            dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
-
           if self.config.DISCRIMINATOR == 'pixel':
             dis_real = self.PixelDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
             dis_fake = self.PixelDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
 
-            # not sure if implemented correctly
-            # https://www.programcreek.com/python/example/118843/torch.nn.BCEWithLogitsLoss
-
-            dis_real_loss = self.pixel_criterion(dis_fake, dis_real)
-            dis_fake_loss = self.pixel_criterion(dis_real, dis_fake)
+            dis_fake_loss = self.pixel_criterion(dis_fake, torch.ones_like(dis_fake))
+            dis_real_loss = self.pixel_criterion(dis_real, torch.zeros_like(dis_real))
 
           if self.config.DISCRIMINATOR == 'patch':
             dis_real = self.NLayerDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
             dis_fake = self.NLayerDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
 
-            dis_real_loss = self.patch_criterion(dis_fake, dis_real)
-            dis_fake_loss = self.patch_criterion(dis_real, dis_fake)
+            dis_fake_loss = self.patch_criterion(dis_fake, torch.ones_like(dis_fake))
+            dis_real_loss = self.patch_criterion(dis_real, torch.zeros_like(dis_real))
+
+
+          if self.config.DISCRIMINATOR_CALC == 'BCEWithLogitsLoss':
+            dis_real_loss = self.adversarial_loss(dis_real, True, True)
+            dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
+
+          if self.config.DISCRIMINATOR_CALC == 'MSELoss':
+            dis_fake_loss = self.mse_criterion(dis_fake, torch.ones_like(dis_fake))
+            dis_real_loss = self.mse_criterion(dis_real, torch.zeros_like(dis_real))
 
           dis_loss += (dis_real_loss + dis_fake_loss) / 2
 
