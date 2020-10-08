@@ -2648,7 +2648,8 @@ class InpaintingModel(BaseModel):
             dis_fake_loss = self.mse_criterion(dis_fake, torch.ones_like(dis_fake))
             dis_real_loss = self.mse_criterion(dis_real, torch.zeros_like(dis_real))
 
-          dis_loss += (dis_real_loss + dis_fake_loss) / 2
+
+          dis_loss += ((dis_real_loss * self.config.DISCRIMINATOR_REAL_LOSS_WEIGHT) + (dis_fake_loss * self.config.DISCRIMINATOR_FAKE_LOSS_WEIGHT)) / 2
 
 
           # original generator loss
@@ -2663,8 +2664,15 @@ class InpaintingModel(BaseModel):
             if self.config.DISCRIMINATOR == 'patch':
               gen_fake = self.NLayerDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
 
-            gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
-            gen_loss += gen_gan_loss
+            #gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
+
+            if self.config.GENERATOR_CALC == 'BCEWithLogitsLoss':
+              gen_gan_loss = self.bce_criterion(gen_fake, torch.ones_like(gen_fake)) 
+
+            if self.config.GENERATOR_CALC == 'MSELoss':
+              gen_gan_loss = self.mse_criterion(gen_fake, torch.ones_like(gen_fake))
+
+            gen_loss += gen_gan_loss * self.config.GENERATOR_CALC_WEIGHT
 
           # generator l1 loss
           if 'DEFAULT_L1' in self.generator_loss:
