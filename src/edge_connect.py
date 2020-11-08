@@ -403,7 +403,7 @@ class EdgeConnect():
 
             if mosaic_size != None:
               images_mosaic = nnf.interpolate(images, size=(mosaic_size, mosaic_size), mode='nearest')
-              images_mosaic = nnf.interpolate(images_mosaic, size=(256, 256), mode='nearest')
+              images_mosaic = nnf.interpolate(images_mosaic, size=(self.config.INPUT_SIZE, self.config.INPUT_SIZE), mode='nearest')
               inputs = (images * (1 - masks).float()) + (images_mosaic * (masks).float())
               #outputs = self(images_mosaic, edges, masks)
             else:
