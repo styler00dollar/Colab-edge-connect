@@ -1,3 +1,5 @@
+#@title Training config
+%%writefile /content/training-checkpoints/config.yml
 MODE: 1             # 1: train, 2: test, 3: eval
 MODEL: 3            # 1: edge model, 2: inpaint model, 3: edge-inpaint model, 4: joint model
 MASK: 5             # 1: random block, 2: half, 3: external, 4: (external, random block), 5: (external, random block, half)
@@ -19,16 +21,19 @@ HORIZONTAL_FLIP_RATIO: 0.5
 VERTICAL_FLIP_RATIO: 0.5
 
 MOSAIC_TEST: 0                # Currently experimental. Inputs randomly resized image, which is overlayed with mask to the generator. Preview images during training won't show the real inputs. Currently 256x256 hardcoded.
-USE_AMP: 0                    # Mixed precision training. Currently experimental. Will show a lot of Nan/Inf errors, but it seems to train fine.
+USE_AMP: 1                    # Mixed precision training. Currently experimental. Will show a lot of Nan/Inf errors, but it seems to train fine.
 
 BATCH_SIZE: 1                 # input batch size for training
 INPUT_SIZE: 256               # input image size for training 0 for original size
 
 # Original Default: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'DEFAULT_GAN']
-DISCRIMINATOR: 'patch'       # default, pixel, patch
+DISCRIMINATOR: 'pixel'       # default, pixel, patch
 DISCRIMINATOR_CALC: 'MSELoss'  # None, BCEWithLogitsLoss, MSELoss
 GENERATOR_CALC: 'MSELoss'      # None, BCEWithLogitsLoss, MSELoss
-GENERATOR_LOSS: ['Adversarial', 'Perceptual', 'Style', 'RelativeL1', 'DEFAULT_GAN', 'HFEN', 'CP'] # Options: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'NEW_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual']
+
+# Options: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'NEW_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual']
+# Warning: Currently, AMP + Style will result in Nan errors
+GENERATOR_LOSS: ['Adversarial', 'Perceptual', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual'] 
 
 # default loss
 INPAINT_ADV_LOSS_WEIGHT: 0.1  # adversarial loss weight # maybe depricated
@@ -90,4 +95,4 @@ SAVE_INTERVAL: 5000           # how many iterations to wait before saving model 
 SAMPLE_INTERVAL: 500          # how many iterations to wait before sampling (0: never)
 SAMPLE_SIZE: 1                # number of images to sample
 EVAL_INTERVAL: 0              # how many iterations to wait before model evaluation (0: never)
-LOG_INTERVAL: 10              # how many iterations to wait before logging training status (0: never)
+LOG_INTERVAL: 1              # how many iterations to wait before logging training status (0: never)
