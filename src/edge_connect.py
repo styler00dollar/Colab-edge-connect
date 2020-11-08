@@ -16,6 +16,7 @@ writer = SummaryWriter()
 
 import random
 #from torchvision.utils import save_image
+#save_image(img1, 'img1.png')
 import torch.nn.functional as nnf
 
 class EdgeConnect():
@@ -150,16 +151,23 @@ class EdgeConnect():
                 # inpaint with edge model
                 elif model == 3:
                     # train
-                    if True or np.random.binomial(1, 0.5) > 0:
-                        outputs = self.edge_model(images_gray, edges, masks)
-                        outputs = outputs * masks + edges * (1 - masks)
-                    else:
-                        outputs = edges
-
                     if self.mosaic_test == True:
                       mosaic_size = int(random.triangular(int(min(self.config.INPUT_SIZE*self.config.MOSAIC_MIN, self.config.INPUT_SIZE*self.config.MOSAIC_MIN)), int(min(self.config.INPUT_SIZE*self.config.MOSAIC_MID, self.config.INPUT_SIZE*self.config.MOSAIC_MID)), int(min(self.config.INPUT_SIZE*self.config.MOSAIC_MAX, self.config.INPUT_SIZE*self.config.MOSAIC_MAX))))
+
+                      if True or np.random.binomial(1, 0.5) > 0:
+                        outputs = self.edge_model(images_gray, edges, masks, mosaic_size)
+                        outputs = outputs * masks + edges * (1 - masks)
+                      else:
+                        outputs = edges
+
                       outputs, gen_loss, dis_loss, logs = self.inpaint_model.process(images, outputs.detach(), masks, mosaic_size)
                     else:
+                      if True or np.random.binomial(1, 0.5) > 0:
+                        outputs = self.edge_model(images_gray, edges, masks)
+                        outputs = outputs * masks + edges * (1 - masks)
+                      else:
+                        outputs = edges
+
                       outputs, gen_loss, dis_loss, logs = self.inpaint_model.process(images, outputs.detach(), masks)
 
                     outputs_merged = (outputs * masks) + (images * (1 - masks))

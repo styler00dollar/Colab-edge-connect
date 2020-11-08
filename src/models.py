@@ -116,10 +116,22 @@ class EdgeModel(BaseModel):
 
 
         # process outputs
+        """
+        if(mosaic_size != None):
+          # resize image with random size
+          images_mosaic = nnf.interpolate(images, size=(mosaic_size, mosaic_size), mode='nearest')
+          images_mosaic = nnf.interpolate(images_mosaic, size=(self.config.INPUT_SIZE, self.config.INPUT_SIZE), mode='nearest')
+          images_mosaic = (images * (1 - masks).float()) + (images_mosaic * (masks).float())
+          outputs = self(images_mosaic, edges, masks)
+        else:
+          outputs = self(images, edges, masks)
+
+        """
+
+        # process outputs
         outputs = self(images, edges, masks)
         gen_loss = 0
         dis_loss = 0
-
 
         # discriminator loss
         dis_input_real = torch.cat((images, edges), dim=1)
@@ -156,9 +168,18 @@ class EdgeModel(BaseModel):
 
         return outputs, gen_loss, dis_loss, logs
 
-    def forward(self, images, edges, masks):
+    def forward(self, images, edges, masks, mosaic_size=None):
+        if(mosaic_size != None):
+          # resize image with random size
+          images_mosaic = nnf.interpolate(images, size=(mosaic_size, mosaic_size), mode='nearest')
+          images_mosaic = nnf.interpolate(images_mosaic, size=(self.config.INPUT_SIZE, self.config.INPUT_SIZE), mode='nearest')
+          images_mosaic = (images * (1 - masks).float()) + (images_mosaic * (masks).float())
+          images_masked = self(images_mosaic, edges, masks)
+        else:
+          images_masked = (edges * (1 - masks))
+
         edges_masked = (edges * (1 - masks))
-        images_masked = (images * (1 - masks)) + masks
+        #images_masked = (images * (1 - masks)) + masks
         inputs = torch.cat((images_masked, edges_masked, masks), dim=1)
         outputs = self.generator(inputs)                                    # in: [grayscale(1) + edge(1) + mask(1)]
         return outputs
