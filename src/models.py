@@ -139,25 +139,48 @@ class EdgeModel(BaseModel):
         #real_scores = Discriminator(DiffAugment(reals, policy=policy))
         dis_real, dis_real_feat = self.discriminator(DiffAugment(dis_input_real, policy=policy))        # in: (grayscale(1) + edge(1))
         dis_fake, dis_fake_feat = self.discriminator(DiffAugment(dis_input_fake, policy=policy))        # in: (grayscale(1) + edge(1))
-        dis_real_loss = self.adversarial_loss(dis_real, True, True)
-        dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
-        dis_loss += (dis_real_loss + dis_fake_loss) / 2
+
+        # original loss
+        if self.use_amp == 1:
+          with torch.cuda.amp.autocast():
+            dis_real_loss = self.adversarial_loss(dis_real, True, True)
+            dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
+            dis_loss += (dis_real_loss + dis_fake_loss) / 2
 
 
-        # generator adversarial loss
-        gen_input_fake = torch.cat((images, outputs), dim=1)
-        gen_fake, gen_fake_feat = self.discriminator(DiffAugment(gen_input_fake, policy=policy))         # in: (grayscale(1) + edge(1))
-        gen_gan_loss = self.adversarial_loss(gen_fake, True, False)
-        gen_loss += gen_gan_loss
+            # generator adversarial loss
+            gen_input_fake = torch.cat((images, outputs), dim=1)
+            gen_fake, gen_fake_feat = self.discriminator(DiffAugment(gen_input_fake, policy=policy))         # in: (grayscale(1) + edge(1))
+            gen_gan_loss = self.adversarial_loss(gen_fake, True, False)
+            gen_loss += gen_gan_loss
 
 
-        # generator feature matching loss
-        gen_fm_loss = 0
-        for i in range(len(dis_real_feat)):
-            gen_fm_loss += self.l1_loss(gen_fake_feat[i], dis_real_feat[i].detach())
-        gen_fm_loss = gen_fm_loss * self.config.FM_LOSS_WEIGHT
-        gen_loss += gen_fm_loss
+            # generator feature matching loss
+            gen_fm_loss = 0
+            for i in range(len(dis_real_feat)):
+                gen_fm_loss += self.l1_loss(gen_fake_feat[i], dis_real_feat[i].detach())
+            gen_fm_loss = gen_fm_loss * self.config.FM_LOSS_WEIGHT
+            gen_loss += gen_fm_loss
 
+        else:
+          dis_real_loss = self.adversarial_loss(dis_real, True, True)
+          dis_fake_loss = self.adversarial_loss(dis_fake, False, True)
+          dis_loss += (dis_real_loss + dis_fake_loss) / 2
+
+
+          # generator adversarial loss
+          gen_input_fake = torch.cat((images, outputs), dim=1)
+          gen_fake, gen_fake_feat = self.discriminator(DiffAugment(gen_input_fake, policy=policy))         # in: (grayscale(1) + edge(1))
+          gen_gan_loss = self.adversarial_loss(gen_fake, True, False)
+          gen_loss += gen_gan_loss
+
+
+          # generator feature matching loss
+          gen_fm_loss = 0
+          for i in range(len(dis_real_feat)):
+              gen_fm_loss += self.l1_loss(gen_fake_feat[i], dis_real_feat[i].detach())
+          gen_fm_loss = gen_fm_loss * self.config.FM_LOSS_WEIGHT
+          gen_loss += gen_fm_loss
 
         # create logs
         logs = [
