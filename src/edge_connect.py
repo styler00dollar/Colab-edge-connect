@@ -101,15 +101,15 @@ class EdgeConnect():
             return
 
         while(keep_training):
-			
+
             epoch += 1
             print('\n\nTraining epoch: %d' % epoch)
 
             progbar = Progbar(total, width=20, stateful_metrics=['epoch', 'iter'])
-			
+
             for items in train_loader:
                 #writer.add_scalar('data/scalar1', 20, self.edge_model.iteration)
-				
+
                 self.edge_model.train()
                 self.inpaint_model.train()
 
@@ -157,7 +157,7 @@ class EdgeConnect():
                         outputs = edges
 
                     if self.mosaic_test == True:
-                      mosaic_size = int(random.triangular(int(min(256*0.01, 256*0.01)), int(min(256*0.2, 256*0.2)), int(min(256*0.0625, 256*0.0625))))
+                      mosaic_size = int(random.triangular(int(min(self.config.INPUT_SIZE*self.config.MOSAIC_MIN, self.config.INPUT_SIZE*self.config.MOSAIC_MIN)), int(min(self.config.INPUT_SIZE*self.config.MOSAIC_MID, self.config.INPUT_SIZE*self.config.MOSAIC_MID)), int(min(self.config.INPUT_SIZE*self.config.MOSAIC_MAX, self.config.INPUT_SIZE*self.config.MOSAIC_MAX))))
                       outputs, gen_loss, dis_loss, logs = self.inpaint_model.process(images, outputs.detach(), masks, mosaic_size)
                     else:
                       outputs, gen_loss, dis_loss, logs = self.inpaint_model.process(images, outputs.detach(), masks)
@@ -181,7 +181,7 @@ class EdgeConnect():
                     writer.add_scalar('data/mae', mae.item(), iteration)
                     writer.add_scalar('data/gen_loss', gen_loss.data.cpu().numpy(), iteration)
                     writer.add_scalar('data/dis_loss', dis_loss.data.cpu().numpy(), iteration)
-					
+
                 # joint model
                 else:
                     # train
@@ -408,8 +408,8 @@ class EdgeConnect():
               #outputs = self(images_mosaic, edges, masks)
             else:
               inputs = (images * (1 - masks)) + masks
-            
-            
+
+
             outputs = self.edge_model(images_gray, edges, masks).detach()
             edges = (outputs * masks + edges * (1 - masks)).detach()
             outputs = self.inpaint_model(images, edges, masks)

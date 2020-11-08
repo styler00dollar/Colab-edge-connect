@@ -1,5 +1,3 @@
-#@title Training config
-%%writefile /content/training-checkpoints/config.yml
 MODE: 1             # 1: train, 2: test, 3: eval
 MODEL: 3            # 1: edge model, 2: inpaint model, 3: edge-inpaint model, 4: joint model
 MASK: 5             # 1: random block, 2: half, 3: external, 4: (external, random block), 5: (external, random block, half)
@@ -13,14 +11,18 @@ VERBOSE: 0          # turns on verbose mode in the output console
 # input
 # edge-connect default: 'input_size', 'center_crop'
 RESIZE_MODE: 'random_resize'     # 'input_size', 'random_resize', 'input_size_and_random_downscale' # keeps aspect ratio
-CROP_MODE: 'random_crop'      # 'random_crop', 'center_crop' # center_crop assumes that the smaller axis is the INPUT_SIZE. 
+CROP_MODE: 'random_crop'      # 'random_crop', 'center_crop' # center_crop assumes that the smaller axis is the INPUT_SIZE.
 FLIP_MODE: ['horizontal_flip', 'vertical_flip'] # ['horizontal_flip', 'vertical_flip']
 # ratio
 INPUT_SIZE_AND_RANDOM_DOWNSCALE_RATIO: 0.5
 HORIZONTAL_FLIP_RATIO: 0.5
 VERTICAL_FLIP_RATIO: 0.5
 
-MOSAIC_TEST: 0                # Currently experimental. Inputs randomly resized image, which is overlayed with mask to the generator. Preview images during training won't show the real inputs. Currently 256x256 hardcoded.
+MOSAIC_TEST: 0                # Currently experimental
+MOSAIC_MIN: 0.01
+MOSAIC_MID: 0.2
+MOSAIC_MAX: 0.0625
+
 USE_AMP: 1                    # Mixed precision training. Currently experimental. Will show a lot of Nan/Inf errors, but it seems to train fine.
 
 BATCH_SIZE: 1                 # input batch size for training
@@ -33,7 +35,7 @@ GENERATOR_CALC: 'MSELoss'      # None, BCEWithLogitsLoss, MSELoss
 
 # Options: ['Adversarial', 'Perceptual', 'Style', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'NEW_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual']
 # Warning: Currently, AMP + Style will result in Nan errors
-GENERATOR_LOSS: ['Adversarial', 'Perceptual', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual'] 
+GENERATOR_LOSS: ['Adversarial', 'Perceptual', 'DEFAULT_L1', 'NEW_L1', 'DEFAULT_GAN', 'HFEN', 'TV', 'ElasticLoss', 'RelativeL1', 'L1CosineSim', 'ClipL1', 'FFT', 'OF', 'GP', 'CP', 'Contextual']
 
 # default loss
 INPAINT_ADV_LOSS_WEIGHT: 0.1  # adversarial loss weight # maybe depricated
@@ -56,16 +58,15 @@ L1_WEIGHT: 0.01               # using new L1
 HFEN_WEIGHT: 0.1              # high frequency error norm (HFEN) weight
 TV_WEIGHT: 0.000001           # total variation loss weight
 ElasticLoss_WEIGHT: 0.01
-RelativeL1_WEIGHT: 0.01 
-L1CosineSim_WEIGHT: 0.01 
-ClipL1_WEIGHT: 0.01 
-FFT_WEIGHT: 0.01 
+RelativeL1_WEIGHT: 0.01
+L1CosineSim_WEIGHT: 0.01
+ClipL1_WEIGHT: 0.01
+FFT_WEIGHT: 0.01
 OF_WEIGHT: 0.01               # Overflow loss weight
 GP_WEIGHT: 0.01               # Gradient Profile (GP) loss weight
 CP_WEIGHT: 0.01               # Color Profile (CP) loss weight
-Contextual_WEIGHT: 10.01 
+Contextual_WEIGHT: 10.01
 HFEN_TYPE: 'Charbonnier' #L1, MSE, Charbonnier, Elastic, Relative, L1CosineSim
-
 
 TRAIN_FLIST: /content/train/train.tflist
 VAL_FLIST: /content/val/val.tflist

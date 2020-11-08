@@ -341,10 +341,9 @@ class InpaintingModel(BaseModel):
         self.dis_optimizer.zero_grad()
 
         if(mosaic_size != None):
-          # resize image with random size. (256 currently hardcoded)
-          #mosaic_size = int(random.triangular(int(min(256*0.01, 256*0.01)), int(min(256*0.2, 256*0.2)), int(min(256*0.0625, 256*0.0625))))
+          # resize image with random size
           images_mosaic = nnf.interpolate(images, size=(mosaic_size, mosaic_size), mode='nearest')
-          images_mosaic = nnf.interpolate(images_mosaic, size=(256, 256), mode='nearest')
+          images_mosaic = nnf.interpolate(images_mosaic, size=(self.config.INPUT_SIZE, self.config.INPUT_SIZE), mode='nearest')
           images_mosaic = (images * (1 - masks).float()) + (images_mosaic * (masks).float())
           outputs = self(images_mosaic, edges, masks)
         else:
