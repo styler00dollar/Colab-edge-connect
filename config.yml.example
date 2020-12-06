@@ -7,6 +7,7 @@ SEED: 10            # random seed
 GPU: [0]            # list of gpu ids
 DEBUG: 0            # turns on debugging mode
 VERBOSE: 0          # turns on verbose mode in the output console
+DIFFAUG: 1
 
 # input
 # edge-connect default: 'input_size', 'center_crop'
@@ -18,7 +19,7 @@ INPUT_SIZE_AND_RANDOM_DOWNSCALE_RATIO: 0.5
 HORIZONTAL_FLIP_RATIO: 0.5
 VERTICAL_FLIP_RATIO: 0.5
 
-MOSAIC_TEST: 0                # Currently experimental
+MOSAIC_TEST: 1                # Currently experimental
 MOSAIC_MIN: 0.01
 MOSAIC_MID: 0.2
 MOSAIC_MAX: 0.0625
@@ -93,7 +94,7 @@ FM_LOSS_WEIGHT: 10            # feature-matching loss weight (used in EdgeModel)
 
 # saving
 SAVE_INTERVAL: 5000           # how many iterations to wait before saving model (0: never)
-SAMPLE_INTERVAL: 500          # how many iterations to wait before sampling (0: never)
+SAMPLE_INTERVAL: 1000          # how many iterations to wait before sampling (0: never)
 SAMPLE_SIZE: 1                # number of images to sample
 EVAL_INTERVAL: 0              # how many iterations to wait before model evaluation (0: never)
 LOG_INTERVAL: 1              # how many iterations to wait before logging training status (0: never)

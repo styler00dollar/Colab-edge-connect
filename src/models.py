@@ -136,9 +136,9 @@ class EdgeModel(BaseModel):
         # discriminator loss
         dis_input_real = torch.cat((images, edges), dim=1)
         dis_input_fake = torch.cat((images, outputs.detach()), dim=1)
-        #real_scores = Discriminator(DiffAugment(reals, policy=policy))
-        dis_real, dis_real_feat = self.discriminator(DiffAugment(dis_input_real, policy=policy))        # in: (grayscale(1) + edge(1))
-        dis_fake, dis_fake_feat = self.discriminator(DiffAugment(dis_input_fake, policy=policy))        # in: (grayscale(1) + edge(1))
+
+        dis_real, dis_real_feat = self.discriminator(dis_input_real)        # in: (grayscale(1) + edge(1))
+        dis_fake, dis_fake_feat = self.discriminator(dis_input_fake)        # in: (grayscale(1) + edge(1))
 
         # original loss
         if self.use_amp == 1:
@@ -150,7 +150,7 @@ class EdgeModel(BaseModel):
 
             # generator adversarial loss
             gen_input_fake = torch.cat((images, outputs), dim=1)
-            gen_fake, gen_fake_feat = self.discriminator(DiffAugment(gen_input_fake, policy=policy))         # in: (grayscale(1) + edge(1))
+            gen_fake, gen_fake_feat = self.discriminator(gen_input_fake)         # in: (grayscale(1) + edge(1))
             gen_gan_loss = self.adversarial_loss(gen_fake, True, False)
             gen_loss += gen_gan_loss
 
@@ -170,7 +170,7 @@ class EdgeModel(BaseModel):
 
           # generator adversarial loss
           gen_input_fake = torch.cat((images, outputs), dim=1)
-          gen_fake, gen_fake_feat = self.discriminator(DiffAugment(gen_input_fake, policy=policy))         # in: (grayscale(1) + edge(1))
+          gen_fake, gen_fake_feat = self.discriminator(gen_input_fake, policy=policy)         # in: (grayscale(1) + edge(1))
           gen_gan_loss = self.adversarial_loss(gen_fake, True, False)
           gen_loss += gen_gan_loss
 
@@ -404,19 +404,23 @@ class InpaintingModel(BaseModel):
             # discriminator loss
             dis_input_real = images
             dis_input_fake = outputs.detach()
-            #real_scores = Discriminator(DiffAugment(reals, policy=policy))
+
+            if self.config.DIFFAUG == 1:
+              dis_input_real = DiffAugment(dis_input_real, policy=policy)
+              dis_input_fake = DiffAugment(dis_input_fake, policy=policy)
 
             if self.config.DISCRIMINATOR == 'default':
-              dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
-              dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+              dis_real, _ = self.discriminator(dis_input_real)                    # in: [rgb(3)]
+              dis_fake, _ = self.discriminator(dis_input_fake)                    # in: [rgb(3)]
+
 
             if self.config.DISCRIMINATOR == 'pixel':
-              dis_real = self.PixelDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
-              dis_fake = self.PixelDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+              dis_real = self.PixelDiscriminator(dis_input_real)                    # in: [rgb(3)]
+              dis_fake = self.PixelDiscriminator(dis_input_fake)                    # in: [rgb(3)]
 
             if self.config.DISCRIMINATOR == 'patch':
-              dis_real = self.NLayerDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
-              dis_fake = self.NLayerDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+              dis_real = self.NLayerDiscriminator(dis_input_real)                    # in: [rgb(3)]
+              dis_fake = self.NLayerDiscriminator(dis_input_fake)                    # in: [rgb(3)]
 
 
 
@@ -436,13 +440,16 @@ class InpaintingModel(BaseModel):
             # generator adversarial loss
             gen_input_fake = outputs
 
+            if self.config.DIFFAUG == 1:
+              gen_input_fake = DiffAugment(gen_input_fake, policy=policy)
+
             if 'DEFAULT_GAN' in self.generator_loss:
               if self.config.DISCRIMINATOR == 'default':
-                gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+                gen_fake, _ = self.discriminator(gen_input_fake)                  # in: [rgb(3)]
               if self.config.DISCRIMINATOR == 'pixel':
-                gen_fake = self.PixelDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+                gen_fake = self.PixelDiscriminator(gen_input_fake)                  # in: [rgb(3)]
               if self.config.DISCRIMINATOR == 'patch':
-                gen_fake = self.NLayerDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+                gen_fake = self.NLayerDiscriminator(gen_input_fake)                  # in: [rgb(3)]
 
               #gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
 
@@ -521,28 +528,29 @@ class InpaintingModel(BaseModel):
               gen_loss += self.config.Contextual_WEIGHT * self._Contextual_Loss(outputs, images)
 
         else:
-          # process outputs
-          #outputs = self(images, edges, masks)
           gen_loss = 0
           dis_loss = 0
-
 
           # discriminator loss
           dis_input_real = images
           dis_input_fake = outputs.detach()
-          #real_scores = Discriminator(DiffAugment(reals, policy=policy))
+
+          if self.config.DIFFAUG == 1:
+            dis_input_real = DiffAugment(dis_input_real, policy=policy)
+            dis_input_fake = DiffAugment(dis_input_fake, policy=policy)
 
           if self.config.DISCRIMINATOR == 'default':
-            dis_real, _ = self.discriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
-            dis_fake, _ = self.discriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+            dis_real, _ = self.discriminator(dis_input_real)                    # in: [rgb(3)]
+            dis_fake, _ = self.discriminator(dis_input_fake)                    # in: [rgb(3)]
+
 
           if self.config.DISCRIMINATOR == 'pixel':
-            dis_real = self.PixelDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
-            dis_fake = self.PixelDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+            dis_real = self.PixelDiscriminator(dis_input_real)                    # in: [rgb(3)]
+            dis_fake = self.PixelDiscriminator(dis_input_fake)                    # in: [rgb(3)]
 
           if self.config.DISCRIMINATOR == 'patch':
-            dis_real = self.NLayerDiscriminator(DiffAugment(dis_input_real, policy=policy))                    # in: [rgb(3)]
-            dis_fake = self.NLayerDiscriminator(DiffAugment(dis_input_fake, policy=policy))                    # in: [rgb(3)]
+            dis_real = self.NLayerDiscriminator(dis_input_real)                    # in: [rgb(3)]
+            dis_fake = self.NLayerDiscriminator(dis_input_fake)                    # in: [rgb(3)]
 
 
 
@@ -562,13 +570,16 @@ class InpaintingModel(BaseModel):
           # generator adversarial loss
           gen_input_fake = outputs
 
+          if self.config.DIFFAUG == 1:
+            gen_input_fake = DiffAugment(gen_input_fake, policy=policy)
+
           if 'DEFAULT_GAN' in self.generator_loss:
             if self.config.DISCRIMINATOR == 'default':
-              gen_fake, _ = self.discriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+              gen_fake, _ = self.discriminator(gen_input_fake)                  # in: [rgb(3)]
             if self.config.DISCRIMINATOR == 'pixel':
-              gen_fake = self.PixelDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+              gen_fake = self.PixelDiscriminator(gen_input_fake)                  # in: [rgb(3)]
             if self.config.DISCRIMINATOR == 'patch':
-              gen_fake = self.NLayerDiscriminator(DiffAugment(gen_input_fake, policy=policy))                  # in: [rgb(3)]
+              gen_fake = self.NLayerDiscriminator(gen_input_fake)                  # in: [rgb(3)]
 
             #gen_gan_loss = self.adversarial_loss(gen_fake, True, False) * self.config.INPAINT_ADV_LOSS_WEIGHT
 
